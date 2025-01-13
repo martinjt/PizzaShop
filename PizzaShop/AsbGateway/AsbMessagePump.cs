@@ -23,11 +23,14 @@ public class AsbMessagePump<T>(
         while(!cancellationToken.IsCancellationRequested)
         {
             var request = await _consumer.ReceiveMessage(cancellationToken);
-            if (request is not null)
+            if (request is null)
             {
-                if (await handler(request.Content, cancellationToken))
-                    await _consumer.CompleteMessage(request);
+                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+                continue;
             }
+            
+            if (await handler(request.Content, cancellationToken))
+                await _consumer.CompleteMessage(request);
         }
     }
 }
