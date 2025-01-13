@@ -9,6 +9,11 @@
 
     <ItemGroup>
       <PackageReference Include="Aspire.Azure.Messaging.ServiceBus" Version="9.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\AsbGateway\AsbGateway.csproj" />
     </ItemGroup>
 
 </Project>

@@ -1,4 +1,5 @@
 using Azure.Messaging.ServiceBus;
+using Microsoft.Extensions.Logging;
 
 namespace AsbGateway;
 
@@ -14,23 +15,31 @@ public class AsbMessagePump<T>(
     ServiceBusClient busClient,
     string queueName,
     Func<ServiceBusReceivedMessage, T> mapToRequest,
-    Func<T, CancellationToken, Task<bool>> handler)
+    Func<T, CancellationToken, Task<bool>> handler,
+    ILogger<AsbMessagePump<T>> logger)
 {
-    private readonly AsbConsumer<T> _consumer = new(queueName, busClient, mapToRequest);
 
     public async Task Run(CancellationToken cancellationToken = default)
     {
-        while(!cancellationToken.IsCancellationRequested)
+        var processor = busClient.CreateProcessor(queueName, new ServiceBusProcessorOptions());
+        processor.ProcessMessageAsync += async args =>
         {
-            var request = await _consumer.ReceiveMessage(cancellationToken);
-            if (request is null)
+            var request = mapToRequest(args.Message);
+            var result = await handler(request, cancellationToken);
+            if (result)
             {
-                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
-                continue;
+                await args.CompleteMessageAsync(args.Message, cancellationToken );
             }
-            
-            if (await handler(request.Content, cancellationToken))
-                await _consumer.CompleteMessage(request);
-        }
+            else
+            {
+                await args.AbandonMessageAsync(args.Message, cancellationToken: cancellationToken);
+            }
+        };
+        processor.ProcessErrorAsync += args =>
+        {
+            logger.LogError(args.Exception, "Error processing message");
+            return Task.CompletedTask;
+        };
+        await processor.StartProcessingAsync(cancellationToken);
     }
 }
