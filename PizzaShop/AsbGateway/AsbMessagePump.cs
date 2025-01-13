@@ -21,7 +21,12 @@ public class AsbMessagePump<T>(
 
     public async Task Run(CancellationToken cancellationToken = default)
     {
-        var processor = busClient.CreateProcessor(queueName, new ServiceBusProcessorOptions());
+        var processor = busClient.CreateProcessor(queueName, new ServiceBusProcessorOptions
+        {
+            MaxConcurrentCalls = 1,
+            AutoCompleteMessages = false
+        });
+        
         processor.ProcessMessageAsync += async args =>
         {
             var request = mapToRequest(args.Message);
