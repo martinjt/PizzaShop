@@ -2,7 +2,6 @@
 using AsbGateway;
 using Azure.Messaging.ServiceBus;
 using Courier;
-using Microsoft.Azure.Amqp;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -22,7 +21,7 @@ var hostBuilder = new HostBuilder()
     })
     .ConfigureServices((hostContext, services) =>
     {
-        services.AddHostedService<MessagePumpService<DeliveryManifest>>(serviceProvider =>
+        services.AddHostedService<AsbMessagePumpService<DeliveryManifest>>(serviceProvider =>
         {
             var connectionString = hostContext.Configuration["ServiceBus:ConnectionString"];
             var queueName = hostContext.Configuration["ServiceBus:QueueName"];
@@ -34,7 +33,10 @@ var hostBuilder = new HostBuilder()
             
             var client = new ServiceBusClient(connectionString);
             var logger = serviceProvider.GetRequiredService<ILogger<AsbMessagePump<DeliveryManifest>>>();
-            return new MessagePumpService<DeliveryManifest>(client, queueName, logger,
+            return new AsbMessagePumpService<DeliveryManifest>(
+                client, 
+                queueName, 
+                logger,
                 message => JsonSerializer.Deserialize<DeliveryManifest>(message.Body.ToString()) ?? throw new InvalidOperationException("Invalid message"), 
                 async (job, token) => await new DeliveryJobHandler().Handle(job, token));
         });

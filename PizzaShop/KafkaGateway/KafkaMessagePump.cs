@@ -5,7 +5,7 @@ namespace KafkaGateway;
 
 public class KafkaMessagePump<T>(IConsumer<string, T> consumer, string topic)
 {
-    public async Task Run(
+    public async Task RunAsync(
         Func<T, bool> handler, 
         CancellationToken cancellationToken = default)
     {

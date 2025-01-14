@@ -21,7 +21,7 @@ var hostBuilder = new HostBuilder()
     })
     .ConfigureServices((hostContext, services) =>
     {
-        services.AddHostedService<MessagePumpService<Order>>(serviceProvider =>
+        services.AddHostedService<AsbMessagePumpService<Order>>(serviceProvider =>
         {
             var connectionString = hostContext.Configuration["ServiceBus:ConnectionString"];
             var queueName = hostContext.Configuration["ServiceBus:QueueName"];
@@ -33,7 +33,10 @@ var hostBuilder = new HostBuilder()
             
             var client = new ServiceBusClient(connectionString);
             var logger = serviceProvider.GetRequiredService<ILogger<AsbMessagePump<Order>>>();
-            return new MessagePumpService<Order>(client, queueName, logger,
+            return new AsbMessagePumpService<Order>(
+                client, 
+                queueName, 
+                logger,
                 message => JsonSerializer.Deserialize<Order>(message.Body.ToString()) ?? throw new InvalidOperationException("Invalid message"), 
                 async (order, token) => await new PlaceOrderHandler().HandleAsync(order, token));
         });

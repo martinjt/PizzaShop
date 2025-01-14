@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AsbGateway;
 
-public class MessagePumpService<T>(
+public class AsbMessagePumpService<T>(
     ServiceBusClient client,
     string queueName,
     ILogger<AsbMessagePump<T>> logger,
