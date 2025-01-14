@@ -1,9 +1,8 @@
-using AsbGateway;
 using Azure.Messaging.ServiceBus;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace PizzaShop;
+namespace AsbGateway;
 
 public class MessagePumpService<T>(
     ServiceBusClient client,
