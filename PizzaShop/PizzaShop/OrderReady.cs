@@ -1,3 +1,3 @@
 namespace PizzaShop;
 
-public record OrderReady(Order Order, int CourierId);
+public record OrderReady(int OrderId, int CourierId);

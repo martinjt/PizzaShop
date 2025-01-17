@@ -16,20 +16,16 @@ public class KitchenService(
         while (!stoppingToken.IsCancellationRequested)
         {
             var request = await cookRequests.Reader.ReadAsync(stoppingToken);
-            //TODO: Get the Order out of the Db via EF
-            var order = new Order();
             
             //cook the pizza
             await Task.Delay(5000, stoppingToken); //simulate cooking time
             
-            //TODO: Update the Order in the Db via EF
-            
             //await the courier to accept the order -- assume the first available courier will accept
             var courierStatusUpdate = await courierStatusUpdates.Reader.ReadAsync(stoppingToken);
             if (courierStatusUpdate.Status == CourierStatus.Accepted)
-                await readyProducer.SendMessageAsync(new Message<OrderReady>(new OrderReady(order, courierStatusUpdate.CourierId)), stoppingToken);
+                await readyProducer.SendMessageAsync(new Message<OrderReady>(new OrderReady(request.OrderId, courierStatusUpdate.CourierId)), stoppingToken);
             else if (courierStatusUpdate.Status == CourierStatus.Rejected)
-                await rejectedProducer.SendMessageAsync(new Message<OrderRejected>(new OrderRejected(order.OrderId)), stoppingToken);    
+                await rejectedProducer.SendMessageAsync(new Message<OrderRejected>(new OrderRejected(request.OrderId)), stoppingToken);    
             else
                 throw new InvalidOperationException("Invalid courier status");
             
