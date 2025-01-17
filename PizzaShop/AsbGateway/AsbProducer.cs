@@ -8,10 +8,10 @@ namespace AsbGateway;
 /// </summary>
 /// <param name="busClient">The service bus client</param>
 /// <param name="serviceBusMessageMapper">A mapper function to turn a message of type T into a service bus message</param>
-public class AsbProducer<T>(ServiceBusClient? busClient, Func<Message<T>, ServiceBusMessage> mapToServiceBusMessage) 
+public class AsbProducer<T>(ServiceBusClient? busClient, string queueName, Func<Message<T>, ServiceBusMessage> mapToServiceBusMessage) 
     : AsbGateway<T>(busClient)
 {
-    public async Task SendMessage(string queueName, Message<T> message, CancellationToken cancellationToken = default)
+    public async Task SendMessageAsync(Message<T> message, CancellationToken cancellationToken = default)
     {
         if (BusClient is null)
             throw new InvalidOperationException("Bus client is not initialized");

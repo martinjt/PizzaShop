@@ -1,0 +1,1 @@
+public record CourierStatusUpdate(int CourierId, CourierStatus Status);
