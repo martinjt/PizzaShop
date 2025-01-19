@@ -11,11 +11,14 @@ using PizzaShop;
 //our pizza shop has internal channels for its orchestration
 // -- cookrequests are sent to the kitchen
 // -- deliveryrequests are sent to the dispatch service
-// - courierstatusupdates are sent to the kitchen
+// -- courierstatusupdates are sent to the kitchen
 
 var cookRequests = Channel.CreateBounded<CookRequest>(10);
 var deliveryRequests = Channel.CreateBounded<DeliveryRequest>(10);
 var courierStatusUpdates = Channel.CreateBounded<CourierStatusUpdate>(10);
+
+//our collection of couriers, names are used within queues & streams as well
+string[] couriers = ["Alice", "Bob", "Charlie", "David", "Eve"];
 
 var hostBuilder = new HostBuilder()
     .ConfigureHostConfiguration((config) =>
@@ -34,8 +37,10 @@ var hostBuilder = new HostBuilder()
         //we use multiple pumps, because we don't want all channels to become unresponsive because one gets busy!!! In practice, we would
         //want competing consumers here
         services.AddHostedService<AsbMessagePumpService<Order>>(serviceProvider => AddHostedOrderService(hostContext, serviceProvider));
-        services.AddHostedService<AsbMessagePumpService<JobAccepted>>(serviceProvider => AddHostedJobAcceptedService(hostContext, serviceProvider));
-        services.AddHostedService<AsbMessagePumpService<JobRejected>>(serviceProvider => AddHostedOrderRejectedService(hostContext, serviceProvider)); 
+        
+        //we have distinct queues for job accepted and job rejected to listen to each courier - all post to the same channel
+        services.AddHostedService<AsbMessagePumpService<JobAccepted>>(serviceProvider => AddHostedJobAcceptedService("Alice-Job-Accepted", hostContext, serviceProvider));
+        services.AddHostedService<AsbMessagePumpService<JobRejected>>(serviceProvider => AddHostedOrderRejectedService("Alice-Job-Rejected", hostContext, serviceProvider)); 
         
         //We use channels for our internal pipeline. Channels let us easily wait on work without synchronization primitives
         services.AddHostedService<KitchenService>(_ => AddHostedKitchenService(hostContext));
@@ -61,13 +66,12 @@ AsbMessagePumpService<Order> AddHostedOrderService(HostBuilderContext hostBuilde
         queueName, 
         logger,
         message => JsonSerializer.Deserialize<Order>(message.Body.ToString()) ?? throw new InvalidOperationException("Invalid message"), 
-        async (order, token) => await new PlaceOrderHandler(cookRequests, deliveryRequests).HandleAsync(order, token));
+        async (order, token) => await new PlaceOrderHandler(cookRequests, deliveryRequests, couriers).HandleAsync(order, token));
 }
 
-AsbMessagePumpService<JobAccepted> AddHostedJobAcceptedService(HostBuilderContext hostBuilderContext, IServiceProvider serviceProvider1)
+AsbMessagePumpService<JobAccepted> AddHostedJobAcceptedService(string queueName, HostBuilderContext hostBuilderContext, IServiceProvider serviceProvider1)
 {
     var connectionString = hostBuilderContext.Configuration["ServiceBus:ConnectionString"];
-    var queueName = hostBuilderContext.Configuration["ServiceBus:JobAcceptedQueueName"];
             
     if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(queueName))
     {
@@ -84,10 +88,9 @@ AsbMessagePumpService<JobAccepted> AddHostedJobAcceptedService(HostBuilderContex
         async (jobAccepted, token) => await new JobAcceptedHandler(courierStatusUpdates).HandleAsync(jobAccepted, token));
 }
 
-AsbMessagePumpService<JobRejected> AddHostedOrderRejectedService(HostBuilderContext hostBuilderContext, IServiceProvider serviceProvider2)
+AsbMessagePumpService<JobRejected> AddHostedOrderRejectedService(string queueName, HostBuilderContext hostBuilderContext, IServiceProvider serviceProvider2)
 {
     var connectionString = hostBuilderContext.Configuration["ServiceBus:ConnectionString"];
-    var queueName = hostBuilderContext.Configuration["ServiceBus:JobRejectedQueueName"];
             
     if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(queueName))
     {
@@ -107,22 +110,18 @@ AsbMessagePumpService<JobRejected> AddHostedOrderRejectedService(HostBuilderCont
 KitchenService AddHostedKitchenService(HostBuilderContext hostBuilderContext)
 {
     var connectionString = hostBuilderContext.Configuration["ServiceBus:ConnectionString"];
-    var orderReadyQueueName = hostBuilderContext.Configuration["ServiceBus:OrderReadyQueueName"];
-    var orderRejectedQueueName = hostBuilderContext.Configuration["ServiceBus:OrderRejectedQueueName"];
             
-    if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(orderReadyQueueName) || string.IsNullOrEmpty(orderRejectedQueueName))
+    if (string.IsNullOrEmpty(connectionString))
     {
         throw new InvalidOperationException("ServiceBus:ConnectionString and ServiceBus:OrderRejectedQueueName must be set in configuration");
     }
             
     var orderProducer = new AsbProducer<OrderReady>(
         new ServiceBusClient(connectionString),
-        orderReadyQueueName,
         message => new ServiceBusMessage(JsonSerializer.Serialize(message)));
     
     var rejectedProducer = new AsbProducer<OrderRejected>(
         new ServiceBusClient(connectionString),
-        orderRejectedQueueName,
         message => new ServiceBusMessage(JsonSerializer.Serialize(message)));
             
     return new KitchenService(cookRequests, courierStatusUpdates, orderProducer, rejectedProducer);
@@ -131,7 +130,7 @@ KitchenService AddHostedKitchenService(HostBuilderContext hostBuilderContext)
 DispatchService AddHostedDispatcherService(HostBuilderContext hostBuilderContext)
 {
     var connectionString = hostBuilderContext.Configuration["ServiceBus:ConnectionString"];
-    var deliverManifestQueueName = hostBuilderContext.Configuration["ServiceBus:OrderReadyQueueName"];
+    var deliverManifestQueueName = hostBuilderContext.Configuration["ServiceBus:DeliveryManifestQueueName"];
 
     if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(deliverManifestQueueName))
     {
@@ -140,7 +139,6 @@ DispatchService AddHostedDispatcherService(HostBuilderContext hostBuilderContext
 
     var deliveryManifestProducer = new AsbProducer<DeliveryManifest>(
         new ServiceBusClient(connectionString),
-        deliverManifestQueueName,
         message => new ServiceBusMessage(JsonSerializer.Serialize(message)));
 
     return new DispatchService(deliveryRequests, deliveryManifestProducer);

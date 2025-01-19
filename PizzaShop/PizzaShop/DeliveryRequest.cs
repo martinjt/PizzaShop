@@ -1,16 +1,10 @@
 namespace PizzaShop;
 
-public class DeliveryRequest
+//A request to deliver an order
+public class DeliveryRequest(string courierId, Order order)
 {
-    public DeliveryRequest(Order order)
-    {
-        OrderId = order.OrderId;
-        DeliveryAddress = order.DeliveryAddress;
-        PickupAddress = order.PickupAddress;
-    }
-
-    public int CourierId { get; set; }
-    public int OrderId { get; set; }
-    public Address DeliveryAddress { get; set; }
-    public Address PickupAddress { get; set; }
+    public string CourierId { get; set; } = courierId;
+    public int OrderId { get; set; } = order.OrderId;
+    public Address DeliveryAddress { get; set; } = order.DeliveryAddress;
+    public Address PickupAddress { get; set; } = order.PickupAddress;
 }

@@ -1,14 +1,11 @@
 namespace PizzaShop;
 
-public class CookRequest
+/// <summary>
+/// A request to cook an order
+/// </summary>
+/// <param name="order">The order we are cooking</param>
+public class CookRequest(Order order)
 {
-    public CookRequest(Order order)
-    {
-        OrderId = order.OrderId;
-        Pizzas = order.Pizzas;
-    }
-
-    public int CookId { get; set; }
-    public int OrderId { get; set; }
-    public List<Pizza> Pizzas { get; set; }
+    public int OrderId { get; set; } = order.OrderId;
+    public List<Pizza> Pizzas { get; set; } = order.Pizzas;
 }

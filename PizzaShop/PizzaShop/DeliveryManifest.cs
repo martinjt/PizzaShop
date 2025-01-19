@@ -1,17 +1,14 @@
 
 namespace PizzaShop;
 
-public class DeliveryManifest
+/// <summary>
+/// An order that we have agreed to deliver
+/// </summary>
+/// <param name="request">The delivery request we are turning into a manifest</param>
+public class DeliveryManifest(DeliveryRequest request)
 {
-    public DeliveryManifest(DeliveryRequest request)
-    {
-        OrderId = request.OrderId;
-        DeliveryAddress = request.DeliveryAddress;
-        PickupAddress = request.PickupAddress;
-    }
-
-    public int DeliveryManifestId { get; set; }
-    public int OrderId { get; set; }
-    public Address DeliveryAddress { get; set; }
-    public Address PickupAddress { get; set; }
+    public string CourierId { get; set; } = request.CourierId;
+    public int OrderId { get; set; } = request.OrderId;
+    public Address DeliveryAddress { get; set; } = request.DeliveryAddress;
+    public Address PickupAddress { get; set; } = request.PickupAddress;
 }

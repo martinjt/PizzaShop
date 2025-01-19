@@ -2,6 +2,9 @@
 
 namespace PizzaShop;
 
+/// <summary>
+/// An order for our pizza shop
+/// </summary>
 public class Order
 {
     public int OrderId { get; set; }

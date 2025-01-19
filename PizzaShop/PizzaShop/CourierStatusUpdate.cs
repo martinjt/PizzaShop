@@ -1,1 +1,2 @@
-public record CourierStatusUpdate(int CourierId, CourierStatus Status);
+//What is the response of the courier to this order?
+public record CourierStatusUpdate(string CourierId, CourierStatus Status);
