@@ -1,6 +1,6 @@
 @StoreFront_HostAddress = http://localhost:5005
 
-GET {{StoreFront_HostAddress}}/weatherforecast/
+GET {{StoreFront_HostAddress}}/1/
 Accept: application/json
 
 ###
