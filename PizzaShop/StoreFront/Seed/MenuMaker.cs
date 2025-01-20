@@ -1,8 +1,11 @@
-namespace StoreFront;
+namespace StoreFront.Seed;
 
+/// <summary>
+/// Add some toppings to the database. If you use these toppings, then you should get relational integrity in the database.
+/// </summary>
 public static class MenuMaker
 {
-        public static void CreateToppings(PizzaShopDb db)
+        public static async Task CreateToppings(PizzaShopDb db)
         {
                 var toppings = new Topping[]
                 {
@@ -140,7 +143,7 @@ public static class MenuMaker
                         },
                 };
                 
-                db.Toppings.AddRange(toppings);
-                db.SaveChanges();
+                await db.Toppings.AddRangeAsync(toppings);
+                await db.SaveChangesAsync();
         }
 }

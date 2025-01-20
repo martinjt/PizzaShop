@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using StoreFront.Seed;
 
 namespace StoreFront;
 
@@ -11,7 +12,7 @@ public class Pizza
     [Description("What order does this pizza belong to?")]
     public int OrderId { get; set; }
     [Description("How large should this pizza be, in inches?")]
-    public int Size { get; set; }
+    public PizzaSize Size { get; set; }
     [Description("What toppings should be on this pizza?")]
     public List<PizzaTopping> Toppings { get; set; } = new();
 }

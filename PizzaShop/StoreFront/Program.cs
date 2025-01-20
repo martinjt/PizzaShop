@@ -1,9 +1,18 @@
 using System.ComponentModel;
+using KafkaGateway;
 using Microsoft.EntityFrameworkCore;
 using StoreFront;
+using StoreFront.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<PizzaShopDb>(opt => opt.UseInMemoryDatabase("TodoList"));
+builder.AddKafkaConsumer<int, string>("after-order");
+
+// Listens to status updates about an order
+// Normally, we would tend to run a Kafka worker in a separate process, so that we could scale out to the number of
+// partitions we had, separate to scaling for the number of HTTP requests.
+// To make this simpler, for now, we are just running it as a background process, as we don't need to scale it
+builder.Services.AddHostedService<KafkaMessagePumpService<OrderStatus>>();
 
 builder.Services.AddOpenApi();
 
@@ -15,7 +24,8 @@ using (var scope = scopeFactory.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<PizzaShopDb>();
     if (db.Database.EnsureCreated())
     {
-        MenuMaker.CreateToppings(db);
+        await MenuMaker.CreateToppings(db);
+        await OrderMaker.DeliveredOrders(db);
     }
 }
 
