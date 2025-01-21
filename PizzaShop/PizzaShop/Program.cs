@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using PizzaShop;
 
 //our pizza shop has internal channels for its orchestration
@@ -17,9 +18,6 @@ var cookRequests = Channel.CreateBounded<CookRequest>(10);
 var deliveryRequests = Channel.CreateBounded<DeliveryRequest>(10);
 var courierStatusUpdates = Channel.CreateBounded<CourierStatusUpdate>(10);
 
-//our collection of couriers, names are used within queues & streams as well
-string[] couriers = ["Alice", "Bob", "Charlie", "David", "Eve"];
-
 var hostBuilder = new HostBuilder()
     .ConfigureHostConfiguration((config) =>
     {
@@ -27,32 +25,37 @@ var hostBuilder = new HostBuilder()
     })
     .ConfigureAppConfiguration((hostContext, config) =>
     {
-        config.SetBasePath(Environment.CurrentDirectory);
-        config.AddJsonFile("appsettings.json", optional: false);
-        config.AddJsonFile($"appsettings.{hostContext.HostingEnvironment.EnvironmentName}.json", optional: true);
         config.AddEnvironmentVariables();
     })
     .ConfigureServices((hostContext, services) =>
     {
+        services.Configure<CourierSettings>(hostContext.Configuration.GetSection("CourierSettings"));
+        services.Configure<ServiceBusSettings>(hostContext.Configuration.GetSection("ServiceBus"));
         //we use multiple pumps, because we don't want all channels to become unresponsive because one gets busy!!! In practice, we would
         //want competing consumers here
-        services.AddHostedService<AsbMessagePumpService<Order>>(serviceProvider => AddHostedOrderService(hostContext, serviceProvider));
+        services.AddHostedService<AsbMessagePumpService<Order>>(AddHostedOrderService);
+
+        var courierSettings = hostContext.Configuration.GetSection("CourierSettings").Get<CourierSettings>();
         
-        //we have distinct queues for job accepted and job rejected to listen to each courier - all post to the same channel
-        services.AddHostedService<AsbMessagePumpService<JobAccepted>>(serviceProvider => AddHostedJobAcceptedService("Alice-Job-Accepted", hostContext, serviceProvider));
-        services.AddHostedService<AsbMessagePumpService<JobRejected>>(serviceProvider => AddHostedOrderRejectedService("Alice-Job-Rejected", hostContext, serviceProvider)); 
+        //we have distinct queues for job accepted and job rejected to listen to each courier - all post to the same channel#
+        foreach (var name in courierSettings.Names)
+        {
+            services.AddHostedService<AsbMessagePumpService<JobAccepted>>(serviceProvider => AddHostedJobAcceptedService(name + "-Job-Accepted", serviceProvider));
+            services.AddHostedService<AsbMessagePumpService<JobRejected>>(serviceProvider => AddHostedOrderRejectedService(name + "-Job-Rejected", serviceProvider));
+        }
         
         //We use channels for our internal pipeline. Channels let us easily wait on work without synchronization primitives
-        services.AddHostedService<KitchenService>(_ => AddHostedKitchenService(hostContext));
-        services.AddHostedService<DispatchService>(_ => AddHostedDispatcherService(hostContext));
+        services.AddHostedService<KitchenService>(AddHostedKitchenService);
+        services.AddHostedService<DispatchService>(AddHostedDispatcherService);
     });
 
 await hostBuilder.Build().RunAsync();
 
-AsbMessagePumpService<Order> AddHostedOrderService(HostBuilderContext hostBuilderContext, IServiceProvider serviceProvider)
+AsbMessagePumpService<Order> AddHostedOrderService(IServiceProvider serviceProvider)
 {
-    var connectionString = hostBuilderContext.Configuration["ServiceBus:ConnectionString"];
-    var queueName = hostBuilderContext.Configuration["ServiceBus:OrderQueueName"];
+    var connectionString = serviceProvider.GetRequiredService<IConfiguration>().GetConnectionString("pizza-shop-service-bus");
+    var queueName = serviceProvider.GetRequiredService<IOptions<ServiceBusSettings>>().Value.OrderQueueName;
+    var couriers = serviceProvider.GetRequiredService<IOptions<CourierSettings>>().Value.Names;
             
     if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(queueName))
     {
@@ -69,9 +72,9 @@ AsbMessagePumpService<Order> AddHostedOrderService(HostBuilderContext hostBuilde
         async (order, token) => await new PlaceOrderHandler(cookRequests, deliveryRequests, couriers).HandleAsync(order, token));
 }
 
-AsbMessagePumpService<JobAccepted> AddHostedJobAcceptedService(string queueName, HostBuilderContext hostBuilderContext, IServiceProvider serviceProvider1)
+AsbMessagePumpService<JobAccepted> AddHostedJobAcceptedService(string queueName, IServiceProvider serviceProvider)
 {
-    var connectionString = hostBuilderContext.Configuration["ServiceBus:ConnectionString"];
+    var connectionString = serviceProvider.GetRequiredService<IConfiguration>().GetConnectionString("pizza-shop-service-bus");
             
     if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(queueName))
     {
@@ -79,7 +82,7 @@ AsbMessagePumpService<JobAccepted> AddHostedJobAcceptedService(string queueName,
     }
             
     var client = new ServiceBusClient(connectionString);
-    var logger = serviceProvider1.GetRequiredService<ILogger<AsbMessagePump<JobAccepted>>>();
+    var logger = serviceProvider.GetRequiredService<ILogger<AsbMessagePump<JobAccepted>>>();
     return new AsbMessagePumpService<JobAccepted>(
         client, 
         queueName, 
@@ -88,9 +91,9 @@ AsbMessagePumpService<JobAccepted> AddHostedJobAcceptedService(string queueName,
         async (jobAccepted, token) => await new JobAcceptedHandler(courierStatusUpdates).HandleAsync(jobAccepted, token));
 }
 
-AsbMessagePumpService<JobRejected> AddHostedOrderRejectedService(string queueName, HostBuilderContext hostBuilderContext, IServiceProvider serviceProvider2)
+AsbMessagePumpService<JobRejected> AddHostedOrderRejectedService(string queueName, IServiceProvider serviceProvider)
 {
-    var connectionString = hostBuilderContext.Configuration["ServiceBus:ConnectionString"];
+    var connectionString = serviceProvider.GetRequiredService<IConfiguration>().GetConnectionString("pizza-shop-service-bus");
             
     if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(queueName))
     {
@@ -98,7 +101,7 @@ AsbMessagePumpService<JobRejected> AddHostedOrderRejectedService(string queueNam
     }
             
     var client = new ServiceBusClient(connectionString);
-    var logger = serviceProvider2.GetRequiredService<ILogger<AsbMessagePump<JobRejected>>>();
+    var logger = serviceProvider.GetRequiredService<ILogger<AsbMessagePump<JobRejected>>>();
     return new AsbMessagePumpService<JobRejected>(
         client, 
         queueName, 
@@ -107,9 +110,9 @@ AsbMessagePumpService<JobRejected> AddHostedOrderRejectedService(string queueNam
         async (jobRejected, token) => await new JobRejectedHandler(courierStatusUpdates).HandleAsync(jobRejected, token));
 }
 
-KitchenService AddHostedKitchenService(HostBuilderContext hostBuilderContext)
+KitchenService AddHostedKitchenService(IServiceProvider serviceProvider)
 {
-    var connectionString = hostBuilderContext.Configuration["ServiceBus:ConnectionString"];
+    var connectionString = serviceProvider.GetRequiredService<IConfiguration>().GetConnectionString("pizza-shop-service-bus");
             
     if (string.IsNullOrEmpty(connectionString))
     {
@@ -127,10 +130,13 @@ KitchenService AddHostedKitchenService(HostBuilderContext hostBuilderContext)
     return new KitchenService(cookRequests, courierStatusUpdates, orderProducer, rejectedProducer);
 }
 
-DispatchService AddHostedDispatcherService(HostBuilderContext hostBuilderContext)
+DispatchService AddHostedDispatcherService(IServiceProvider serviceProvider)
 {
-    var connectionString = hostBuilderContext.Configuration["ServiceBus:ConnectionString"];
-    var deliverManifestQueueName = hostBuilderContext.Configuration["ServiceBus:DeliveryManifestQueueName"];
+    var connectionString = serviceProvider.GetRequiredService<IConfiguration>()
+        .GetConnectionString("pizza-shop-service-bus");
+    var deliverManifestQueueName = serviceProvider
+        .GetRequiredService<IOptions<ServiceBusSettings>>()
+        .Value.DeliveryManifestQueueName;
 
     if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(deliverManifestQueueName))
     {
@@ -143,4 +149,15 @@ DispatchService AddHostedDispatcherService(HostBuilderContext hostBuilderContext
 
     return new DispatchService(deliveryRequests, deliveryManifestProducer);
 
+}
+
+public class CourierSettings
+{
+    public string[] Names { get; set; }
+}
+
+public class ServiceBusSettings
+{
+    public string OrderQueueName { get; set; }
+    public string DeliveryManifestQueueName { get; set; }
 }
