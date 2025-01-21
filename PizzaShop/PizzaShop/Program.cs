@@ -18,7 +18,7 @@ var deliveryRequests = Channel.CreateBounded<DeliveryRequest>(10);
 var courierStatusUpdates = Channel.CreateBounded<CourierStatusUpdate>(10);
 
 //our collection of couriers, names are used within queues & streams as well
-string[] couriers = ["Alice", "Bob", "Charlie", "David", "Eve"];
+string[] couriers = ["alice", "bob", "charlie"];
 
 var hostBuilder = new HostBuilder()
     .ConfigureHostConfiguration((config) =>
@@ -39,8 +39,11 @@ var hostBuilder = new HostBuilder()
         services.AddHostedService<AsbMessagePumpService<Order>>(serviceProvider => AddHostedOrderService(hostContext, serviceProvider));
         
         //we have distinct queues for job accepted and job rejected to listen to each courier - all post to the same channel
-        services.AddHostedService<AsbMessagePumpService<JobAccepted>>(serviceProvider => AddHostedJobAcceptedService("Alice-Job-Accepted", hostContext, serviceProvider));
-        services.AddHostedService<AsbMessagePumpService<JobRejected>>(serviceProvider => AddHostedOrderRejectedService("Alice-Job-Rejected", hostContext, serviceProvider)); 
+        foreach (var courier in couriers)
+        {
+            services.AddHostedService<AsbMessagePumpService<JobAccepted>>(serviceProvider => AddHostedJobAcceptedService($"{courier}-job-accepted", hostContext, serviceProvider));
+            services.AddHostedService<AsbMessagePumpService<JobRejected>>(serviceProvider => AddHostedJobRejectedService($"{courier}-job-rejected", hostContext, serviceProvider));
+        }
         
         //We use channels for our internal pipeline. Channels let us easily wait on work without synchronization primitives
         services.AddHostedService<KitchenService>(_ => AddHostedKitchenService(hostContext));
@@ -88,7 +91,7 @@ AsbMessagePumpService<JobAccepted> AddHostedJobAcceptedService(string queueName,
         async (jobAccepted, token) => await new JobAcceptedHandler(courierStatusUpdates).HandleAsync(jobAccepted, token));
 }
 
-AsbMessagePumpService<JobRejected> AddHostedOrderRejectedService(string queueName, HostBuilderContext hostBuilderContext, IServiceProvider serviceProvider2)
+AsbMessagePumpService<JobRejected> AddHostedJobRejectedService(string queueName, HostBuilderContext hostBuilderContext, IServiceProvider serviceProvider2)
 {
     var connectionString = hostBuilderContext.Configuration["ServiceBus:ConnectionString"];
             
@@ -113,7 +116,7 @@ KitchenService AddHostedKitchenService(HostBuilderContext hostBuilderContext)
             
     if (string.IsNullOrEmpty(connectionString))
     {
-        throw new InvalidOperationException("ServiceBus:ConnectionString and ServiceBus:OrderRejectedQueueName must be set in configuration");
+        throw new InvalidOperationException("ServiceBus:ConnectionString must be set in configuration");
     }
             
     var orderProducer = new AsbProducer<OrderReady>(
@@ -130,11 +133,10 @@ KitchenService AddHostedKitchenService(HostBuilderContext hostBuilderContext)
 DispatchService AddHostedDispatcherService(HostBuilderContext hostBuilderContext)
 {
     var connectionString = hostBuilderContext.Configuration["ServiceBus:ConnectionString"];
-    var deliverManifestQueueName = hostBuilderContext.Configuration["ServiceBus:DeliveryManifestQueueName"];
 
-    if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(deliverManifestQueueName))
+    if (string.IsNullOrEmpty(connectionString))
     {
-        throw new InvalidOperationException("ServiceBus: ConnectionString and ServiceBus:DeliveryManifestQueueName must be set in configuration");
+        throw new InvalidOperationException("ServiceBus: ConnectionString must be set in configuration");
     }
 
     var deliveryManifestProducer = new AsbProducer<DeliveryManifest>(

@@ -58,7 +58,7 @@ AsbMessagePumpService<OrderReady> AddHostedOrderReadyService(ConfigurationManage
             
     if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(courierName))
     {
-        throw new InvalidOperationException("ServiceBus:ConnectionString and ServiceBus:QueueName must be set in configuration");
+        throw new InvalidOperationException("ServiceBus:ConnectionString and Courier:Name must be set in configuration");
     }
             
     var client = new ServiceBusClient(connectionString);
