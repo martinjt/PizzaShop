@@ -8,7 +8,7 @@ namespace StoreFront;
 public class Topping
 {
     [Description("The Id for this topping")]
-    public int Id { get; set; }
+    public int ToppingId { get; set; }
     [Description("The name of the topping")]
     public string Name { get; set; } = string.Empty;
     [Description("How much does this topping cost?")]

@@ -6,13 +6,13 @@ using StoreFront.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<PizzaShopDb>(opt => opt.UseInMemoryDatabase("TodoList"));
-builder.AddKafkaConsumer<int, string>("after-order");
+//builder.AddKafkaConsumer<int, string>("after-order");
 
 // Listens to status updates about an order
 // Normally, we would tend to run a Kafka worker in a separate process, so that we could scale out to the number of
 // partitions we had, separate to scaling for the number of HTTP requests.
 // To make this simpler, for now, we are just running it as a background process, as we don't need to scale it
-builder.Services.AddHostedService<KafkaMessagePumpService<OrderStatus>>();
+//builder.Services.AddHostedService<KafkaMessagePumpService<OrderStatus>>();
 
 builder.Services.AddOpenApi();
 
@@ -31,20 +31,42 @@ using (var scope = scopeFactory.CreateScope())
 
 app.MapOpenApi();
 
-app.MapGet("/orders", async (PizzaShopDb db) => await db.Orders.ToListAsync())
+app.MapGet("/orders", async (PizzaShopDb db) =>
+    {
+        return await db.Orders
+            .Include(o => o.Pizzas)
+            .ThenInclude(p => p.Toppings)
+            .ThenInclude(t => t.Topping)
+            .ToListAsync();
+    })
     .WithSummary("Retrieve all orders")
     .WithDescription("The orders endpoint allows you to retrieve all orders.");
 
-app.MapGet("/orders/pending", async (PizzaShopDb db) => 
-    await db.Orders.Where(o => o.Status == OrderStatus.Pending).ToListAsync())
+app.MapGet("/orders/pending", async (PizzaShopDb db) =>
+    {
+        return await db.Orders.Where(o => o.Status == OrderStatus.Pending)
+                .Include(o => o.Pizzas)
+                .ThenInclude(p => p.Toppings)
+                .ThenInclude(t => t.Topping)
+                .ToListAsync();
+    })
     .WithSummary("Retrieve all pending orders")
-    .WithDescription("The pending orders endpoint allows you to retrieve all orders that are currently pending.");
+        .WithDescription("The pending orders endpoint allows you to retrieve all orders that are currently pending.");
 
-app.MapGet("/orders/{id}", async ([Description("The id of the order to watch")]int id, PizzaShopDb db) => 
-    await db.Orders.FindAsync(id)
-        is Order order
+
+app.MapGet("/orders/{id}", async ([Description("The id of the order to watch")] int id, PizzaShopDb db) =>
+    {
+        var order =  await db.Orders
+                .Where(o => o.OrderId == id)
+                .Include(o => o.Pizzas)
+                .ThenInclude(p => p.Toppings)
+                .ThenInclude(t => t.Topping)
+                .SingleOrDefaultAsync();
+        
+        return order != null
             ? Results.Ok(order)
-            : Results.NotFound())
+            : Results.NotFound();
+    })
     .WithSummary("Retrieve an order by its ID")
     .WithDescription("The order endpoint allows you to retrieve an order by its ID.");
 
@@ -54,7 +76,7 @@ app.MapPost("/orders", async ([Description("The pizza order you wish to make")]O
     db.Orders.Add(order);
     await db.SaveChangesAsync();
 
-    return Results.Accepted($"/orders/{order.Id}", order);
+    return Results.Accepted($"/orders/{order.OrderId}", order);
 })
 .WithSummary("Allows new orders to be raised")
 .WithDescription("The new orders endpoint is intended to allow orders to be raised. Orders are created with a status of 'Pending' and an ETA of 30 minutes.");

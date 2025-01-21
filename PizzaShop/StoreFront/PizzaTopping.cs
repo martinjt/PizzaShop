@@ -5,9 +5,8 @@
 /// </summary>
 public class PizzaTopping
 {
-    public int Id { get; set; }
-    public Topping? Topping { get; set; }
-    public int ToppingId { get; set; }
+    public int PizzaToppingId { get; set; }
     public int PizzaId { get; set; }
-
+    public int ToppingId { get; set; }
+    public Topping? Topping { get; set; }
 }

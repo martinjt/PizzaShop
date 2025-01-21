@@ -11,12 +11,10 @@ public static class OrderMaker
         {
             new()
             {
-                Id = 1,
                 Status = OrderStatus.Delivered,
                 CreatedTime = DateTimeOffset.UtcNow,
                 DeliveryAddress = new Address
                 {
-                    Id = 1,
                     Number = "123",
                     City = "Exeter",
                     PostalCode = "EX2 5LG",
@@ -25,7 +23,6 @@ public static class OrderMaker
                 [
                     new()
                     {
-                        Id = 1,
                         Size = PizzaSize.Medium,
                         Toppings = new List<PizzaTopping>()
                         {
@@ -49,7 +46,6 @@ public static class OrderMaker
 
                     new()
                     {
-                        Id = 1,
                         Size = PizzaSize.Medium,
                         Toppings = new List<PizzaTopping>()
                         {
@@ -74,12 +70,10 @@ public static class OrderMaker
             },
             new()
             {
-                Id = 2,
                 Status = OrderStatus.Delivered,
                 CreatedTime = DateTimeOffset.UtcNow,
                 DeliveryAddress = new Address
                 {
-                    Id = 1,
                     Number = "456",
                     City = "Altrincham",
                     PostalCode = "WA15 9AH",
@@ -88,7 +82,6 @@ public static class OrderMaker
                 [
                     new()
                     {
-                        Id = 1,
                         Size = PizzaSize.Large,
                         Toppings = new List<PizzaTopping>()
                         {
@@ -113,12 +106,10 @@ public static class OrderMaker
             },
             new()
             {
-                Id = 3,
                 Status = OrderStatus.Delivered,
                 CreatedTime = DateTimeOffset.UtcNow,
                 DeliveryAddress = new Address
                 {
-                    Id = 1,
                     Number = "789",
                     City = "Huddersfield",
                     PostalCode = "HD2 2QH",
@@ -127,7 +118,6 @@ public static class OrderMaker
                 [
                     new()
                     {
-                        Id = 1,
                         Size = PizzaSize.Large,
                         Toppings = new List<PizzaTopping>()
                         {
