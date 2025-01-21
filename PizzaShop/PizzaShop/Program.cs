@@ -121,11 +121,11 @@ KitchenService AddHostedKitchenService(HostBuilderContext hostBuilderContext)
             
     var orderProducer = new AsbProducer<OrderReady>(
         new ServiceBusClient(connectionString),
-        message => new ServiceBusMessage(JsonSerializer.Serialize(message)));
+        message => new ServiceBusMessage(JsonSerializer.Serialize(message.Content)));
     
     var rejectedProducer = new AsbProducer<OrderRejected>(
         new ServiceBusClient(connectionString),
-        message => new ServiceBusMessage(JsonSerializer.Serialize(message)));
+        message => new ServiceBusMessage(JsonSerializer.Serialize(message.Content)));
             
     return new KitchenService(cookRequests, courierStatusUpdates, orderProducer, rejectedProducer);
 }
@@ -141,7 +141,7 @@ DispatchService AddHostedDispatcherService(HostBuilderContext hostBuilderContext
 
     var deliveryManifestProducer = new AsbProducer<DeliveryManifest>(
         new ServiceBusClient(connectionString),
-        message => new ServiceBusMessage(JsonSerializer.Serialize(message)));
+        message => new ServiceBusMessage(JsonSerializer.Serialize(message.Content)));
 
     return new DispatchService(deliveryRequests, deliveryManifestProducer);
 

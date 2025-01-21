@@ -35,12 +35,12 @@ AsbMessagePumpService<DeliveryManifest> AddHostedAvailabilityRequestService(Conf
 
     var acceptedProducer = new AsbProducer<JobAccepted>(
         new ServiceBusClient(connectionString), 
-        message => new ServiceBusMessage(JsonSerializer.Serialize(message))
+        message => new ServiceBusMessage(JsonSerializer.Serialize(message.Content))
     );
 
     var rejectedProducer = new AsbProducer<JobRejected>(
         new ServiceBusClient(connectionString),
-        message => new ServiceBusMessage(JsonSerializer.Serialize(message))
+        message => new ServiceBusMessage(JsonSerializer.Serialize(message.Content))
     );
             
     return new AsbMessagePumpService<DeliveryManifest>(

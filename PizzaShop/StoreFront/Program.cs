@@ -127,6 +127,8 @@ async Task SendOrderAsync(Order order)
     }
             
     var client = new ServiceBusClient(connectionString);
-    var orderProducer = new AsbProducer<Order>(client, message => new ServiceBusMessage(JsonSerializer.Serialize(message)));
+    var orderProducer = new AsbProducer<Order>(
+        client, 
+        message => new ServiceBusMessage(JsonSerializer.Serialize(message.Content)));
     await orderProducer.SendMessageAsync(queueName, new Message<Order>(order));
 }
