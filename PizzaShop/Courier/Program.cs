@@ -12,9 +12,6 @@ using Microsoft.Extensions.Logging;
 var deliveryJobs = Channel.CreateBounded<OrderStatus>(10);
 
 var hostBuilder = new HostApplicationBuilder();
-hostBuilder.Configuration.Sources.Clear();
-hostBuilder.Configuration.AddEnvironmentVariables();
-
 hostBuilder.Services.AddHostedService<AsbMessagePumpService<DeliveryManifest>>(serviceProvider => AddHostedAvailabilityRequestService(hostBuilder.Configuration, serviceProvider));
 hostBuilder.Services.AddHostedService<AsbMessagePumpService<OrderReady>>(serviceProvider => AddHostedOrderReadyService(hostBuilder.Configuration, serviceProvider));
 hostBuilder.Services.AddHostedService<DeliveryService>(serviceProvider => AddHostedDispatcherService(hostBuilder.Configuration, serviceProvider));
@@ -25,7 +22,7 @@ await hostBuilder.Build().RunAsync();
 
 AsbMessagePumpService<DeliveryManifest> AddHostedAvailabilityRequestService(ConfigurationManager configurationManager, IServiceProvider serviceProvider)
 {
-    var connectionString = serviceProvider.GetRequiredService<IConfiguration>().GetConnectionString("pizza-shop-service-bus");
+    var connectionString = configurationManager.GetValue<string>("ServiceBus:ConnectionString");
     var courierName = configurationManager.GetValue<string>("Courier:Name");
             
     if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(courierName))
@@ -56,7 +53,7 @@ AsbMessagePumpService<DeliveryManifest> AddHostedAvailabilityRequestService(Conf
 
 AsbMessagePumpService<OrderReady> AddHostedOrderReadyService(ConfigurationManager configurationManager, IServiceProvider serviceProvider)
 {
-    var connectionString = serviceProvider.GetRequiredService<IConfiguration>().GetConnectionString("pizza-shop-service-bus");
+    var connectionString = configurationManager.GetValue<string>("ServiceBus:ConnectionString");
     var courierName = configurationManager.GetValue<string>("Courier:Name");
             
     if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(courierName))
@@ -77,7 +74,7 @@ AsbMessagePumpService<OrderReady> AddHostedOrderReadyService(ConfigurationManage
 
 DeliveryService AddHostedDispatcherService(ConfigurationManager configurationManager, IServiceProvider serviceProvider)
 {
-    var connectionString = serviceProvider.GetRequiredService<IConfiguration>().GetConnectionString("pizza-shop-service-bus");
+    var connectionString = configurationManager.GetValue<string>("ServiceBus:ConnectionString");
     var courierName = configurationManager.GetValue<string>("Courier:Name");
 
     if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(courierName))
