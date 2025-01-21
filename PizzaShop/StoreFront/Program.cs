@@ -1,4 +1,7 @@
 using System.ComponentModel;
+using System.Text.Json;
+using AsbGateway;
+using Azure.Messaging.ServiceBus;
 using KafkaGateway;
 using Microsoft.EntityFrameworkCore;
 using StoreFront;
@@ -85,8 +88,12 @@ app.MapPost("/orders", async ([Description("The pizza order you wish to make")]O
     }
     
     db.Orders.Attach(order);
-    await db.SaveChangesAsync();
     
+    //really we should use an Outbox pattern here, to save the outgoing message, but for now we will just save the order
+    await db.SaveChangesAsync();
+
+    await SendOrderAsync(order);
+
     //get the order we just saved
     var pendingOrder = await db.Orders
         .Where(o => o.OrderId == order.OrderId)
@@ -108,3 +115,18 @@ app.MapGet("/toppings", async (PizzaShopDb db) => await db.Toppings.ToListAsync(
 //polling the page returned in the 204 Accept
 
 await app.RunAsync();
+
+async Task SendOrderAsync(Order order)
+{
+    var connectionString = app.Configuration.GetValue<string>("ServiceBus:ConnectionString");
+    var queueName = app.Configuration.GetValue<string>("ServiceBus:OrderQueueName");
+            
+    if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(queueName))
+    {
+        throw new InvalidOperationException("ServiceBus:ConnectionString and ServiceBus:OrderQueueName must be set in configuration");
+    }
+            
+    var client = new ServiceBusClient(connectionString);
+    var orderProducer = new AsbProducer<Order>(client, message => new ServiceBusMessage(JsonSerializer.Serialize(message)));
+    await orderProducer.SendMessageAsync(queueName, new Message<Order>(order));
+}
