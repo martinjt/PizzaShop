@@ -73,10 +73,29 @@ app.MapGet("/orders/{id}", async ([Description("The id of the order to watch")] 
 app.MapPost("/orders", async ([Description("The pizza order you wish to make")]Order order, PizzaShopDb db) =>
 {
     order.CreatedTime = DateTimeOffset.UtcNow;
-    db.Orders.Add(order);
+    
+    //we already have the toppings, so we must attach them to the order
+    foreach (var pizza in order.Pizzas)
+    {
+        foreach (var topping in pizza.Toppings)
+        {
+            topping.ToppingId = topping.Topping?.ToppingId ?? 0;
+            topping.Topping = null;
+        }
+    }
+    
+    db.Orders.Attach(order);
     await db.SaveChangesAsync();
+    
+    //get the order we just saved
+    var pendingOrder = await db.Orders
+        .Where(o => o.OrderId == order.OrderId)
+        .Include(o => o.Pizzas)
+        .ThenInclude(p => p.Toppings)
+        .ThenInclude(t => t.Topping)
+        .SingleOrDefaultAsync();
 
-    return Results.Accepted($"/orders/{order.OrderId}", order);
+    return Results.Accepted($"/orders/{order.OrderId}", pendingOrder);
 })
 .WithSummary("Allows new orders to be raised")
 .WithDescription("The new orders endpoint is intended to allow orders to be raised. Orders are created with a status of 'Pending' and an ETA of 30 minutes.");

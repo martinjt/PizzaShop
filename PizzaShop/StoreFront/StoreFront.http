@@ -4,3 +4,29 @@ GET {{StoreFront_HostAddress}}/1/
 Accept: application/json
 
 ###
+
+### Send POST request with JSON body
+POST{{StoreFront_HostAddress}}/orders
+Content-Type: application/json
+
+{
+  "createdTime": "2025-01-21T12:00:00Z",
+  "deliveryAddress": {
+    "name": "John Doe",
+    "number": "1234",
+    "city": "London",
+    "postalCode": "W12 0TZ"
+  },
+  "pizzas": [
+    {
+      "size": 2,
+      "toppings": [
+        {
+          "topping": {
+            "toppingId": 2
+          }
+        }
+      ]
+    }
+  ]
+}

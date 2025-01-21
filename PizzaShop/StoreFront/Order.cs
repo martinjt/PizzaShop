@@ -16,5 +16,5 @@ public class Order
     [Description("What pizzas do you want?")]
     public ICollection<Pizza> Pizzas { get; set; } 
     [Description("What is the status of this order?")]
-    public OrderStatus Status { get; set; }
+    public OrderStatus Status { get; set; } = OrderStatus.Pending;
 }

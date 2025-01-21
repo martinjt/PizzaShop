@@ -1,3 +1,11 @@
+## Where to find the OpenAPI documentation
+
+Using the MS OpenAPI tooling, you can see the API endpoints and the data that they expect and return at:
+
+```
+http://{host}/openapi/v1.json
+```
+
 
 ## Design Notes
 
