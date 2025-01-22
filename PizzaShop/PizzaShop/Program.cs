@@ -41,8 +41,9 @@ var hostBuilder = new HostBuilder()
         //we have distinct queues for job accepted and job rejected to listen to each courier - all post to the same channel
         foreach (var courier in couriers)
         {
-            services.AddHostedService<AsbMessagePumpService<JobAccepted>>(serviceProvider => AddHostedJobAcceptedService($"{courier}-job-accepted", hostContext, serviceProvider));
-            services.AddHostedService<AsbMessagePumpService<JobRejected>>(serviceProvider => AddHostedJobRejectedService($"{courier}-job-rejected", hostContext, serviceProvider));
+            //work around the problem of multiple service registration by using a singleton explicity, see https://github.com/dotnet/runtime/issues/38751
+            services.AddSingleton<IHostedService, AsbMessagePumpService<JobAccepted>>(serviceProvider => AddHostedJobAcceptedService($"{courier}-job-accepted", hostContext, serviceProvider));
+            services.AddSingleton<IHostedService, AsbMessagePumpService<JobRejected>>(serviceProvider => AddHostedJobRejectedService($"{courier}-job-rejected", hostContext, serviceProvider));
         }
         
         //We use channels for our internal pipeline. Channels let us easily wait on work without synchronization primitives
