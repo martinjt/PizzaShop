@@ -3,10 +3,10 @@ using Confluent.Kafka;
 
 namespace KafkaGateway;
 
-public class KafkaMessagePump<T>(IConsumer<string, T> consumer, string topic)
+public class KafkaMessagePump<TKey, TValue>(IConsumer<TKey, TValue> consumer, string topic)
 {
     public async Task RunAsync(
-        Func<T, bool> handler, 
+        Func<TKey, TValue, Task<bool>> handler, 
         CancellationToken cancellationToken = default)
     {
         try
@@ -23,7 +23,7 @@ public class KafkaMessagePump<T>(IConsumer<string, T> consumer, string topic)
                     continue;
                 }
                 
-                var success = handler(consumeResult.Message.Value);
+                var success = await handler(consumeResult.Message.Key, consumeResult.Message.Value);
                 if (success)
                 {
                     //We don't want to commit unless we have successfully handled the message
@@ -40,10 +40,6 @@ public class KafkaMessagePump<T>(IConsumer<string, T> consumer, string topic)
         catch (OperationCanceledException)
         {
             //Pump was cancelled, exit
-        }
-        finally
-        {
-            consumer.Close();
         }
     }
 } 

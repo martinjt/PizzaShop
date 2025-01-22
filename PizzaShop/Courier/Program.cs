@@ -84,6 +84,6 @@ DeliveryService AddHostedDispatcherService(ConfigurationManager configurationMan
 
     var orderStatusProducer = serviceProvider.GetRequiredService<IProducer<int, string>>(); 
 
-    return new DeliveryService(courierName + "order-status", deliveryJobs, orderStatusProducer );
+    return new DeliveryService(courierName + "-order-status", deliveryJobs, orderStatusProducer );
 
 }

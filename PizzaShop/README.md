@@ -1,20 +1,20 @@
 # Running
 ## What are the different projects?
-- StoreFront: This is the project that the user interacts with. It is a web application that allows the user to place an order for a pizza.
-- PizzaShop: This is the project that processes the orders. It is a console application that listens for orders and 
+- **StoreFron**t: This is the project that the user interacts with. It is a web application that allows the user to place an order for a pizza.
+- **PizzaShop**: This is the project that processes the orders. It is a console application that listens for orders and 
   cooks them. It assigns a courier to each pizza.
-- Courier: This is the project that delivers the pizzas. It is a console application that listens for pizzas and 
+- **Courier**: This is the project that delivers the pizzas. It is a console application that listens for pizzas and 
   delivers them. YOU SHOULD RUN MULTIPLE INSTANCES OF THIS PROJECT TO SEE THE CONCURRENCY IN ACTION. We configure 
   three couriers. Each courier used its own named queues and streams to communicate. Each courier can deliver one pizza 
   at a time. 
   - alice, 
   - bob,
   - charlie. 
-- AsbGateway: This is the project that abstracts the Azure Service Bus. It is a library that the other projects use to 
-  send and receive messages from the Azure Service Bus.
-- KafkaGateway: This is the project that abstracts the Kafka. It is a library that the other projects use to send and 
-  receive messages from the Kafka.
-- AppHost: This is the project that hosts the other projects. It is a console application that starts the 
+- **AsbGateway**: This is the project that abstracts the Azure Service Bus. It is a library that the other projects use to 
+  send and receive messages from the Azure Service Bus. Lightweight, demo library.
+- **KafkaGateway**: This is the project that abstracts the Kafka. It is a library that the other projects use to send and 
+  receive messages from the Kafka. Lightweight, demo library.
+- **AppHost**: This is the project that hosts the other projects. It is a console application that starts the 
   dependencies required by the other projects. It starts and the Kafka. This version does not start the Azure 
   Service Bus Emulator, you must do that independently.
 

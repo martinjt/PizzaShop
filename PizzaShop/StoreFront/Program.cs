@@ -2,20 +2,36 @@ using System.ComponentModel;
 using System.Text.Json;
 using AsbGateway;
 using Azure.Messaging.ServiceBus;
+using Confluent.Kafka;
 using KafkaGateway;
 using Microsoft.EntityFrameworkCore;
 using StoreFront;
 using StoreFront.Seed;
 
+//our collection of couriers, names are used within queues & streams as well
+string[] couriers = ["alice", "bob", "charlie"];
+
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<PizzaShopDb>(opt => opt.UseInMemoryDatabase("TodoList"));
-//builder.AddKafkaConsumer<int, string>("after-order");
+builder.AddKafkaConsumer<int, string>("courier-order-status", settings =>
+{
+    settings.Config.GroupId = "storefront-consumer-group";
+    settings.Config.AutoOffsetReset = AutoOffsetReset.Earliest;
+    settings.Config.BootstrapServers = "localhost:9092";
+    settings.Config.EnableAutoOffsetStore = true;
+    settings.Config.EnableAutoCommit = false;
+});
 
 // Listens to status updates about an order
 // Normally, we would tend to run a Kafka worker in a separate process, so that we could scale out to the number of
 // partitions we had, separate to scaling for the number of HTTP requests.
 // To make this simpler, for now, we are just running it as a background process, as we don't need to scale it
-//builder.Services.AddHostedService<KafkaMessagePumpService<OrderStatus>>();
+
+foreach (var courier in couriers)
+{
+    //work around the problem of multiple service registration by using a singleton explicity, see https://github.com/dotnet/runtime/issues/38751
+    builder.Services.AddSingleton<IHostedService, KafkaMessagePumpService<int, string>>(serviceProvider => AddAfterOrderService(courier + "-order-status", serviceProvider) );
+}
 
 builder.Services.AddOpenApi();
 
@@ -131,4 +147,36 @@ async Task SendOrderAsync(Order order)
         client, 
         message => new ServiceBusMessage(JsonSerializer.Serialize(message.Content)));
     await orderProducer.SendMessageAsync(queueName, new Message<Order>(order));
+}
+
+KafkaMessagePumpService<int, string> AddAfterOrderService(string queueName, IServiceProvider serviceProvider)
+{
+    var consumer = serviceProvider.GetService<IConsumer<int, string>>();
+    if (consumer is null) throw new InvalidOperationException("No Kafka Consumer registered");
+    
+    var logger = serviceProvider.GetRequiredService<ILogger<KafkaMessagePump<int, string>>>();
+    
+    return new KafkaMessagePumpService<int, string>(
+        consumer, 
+        queueName, 
+        logger,
+        (async (key, value) =>
+        {
+            var orderId = key;
+            var orderStatus = Enum.Parse<OrderStatus>(value);
+            
+            {
+                var db = serviceProvider.GetService<PizzaShopDb>();
+                if (db is null) throw new InvalidOperationException("No  EF Context");
+                
+                var orderToUpdate = await db.Orders.SingleOrDefaultAsync(o => o.OrderId == orderId);
+                if (orderToUpdate == null)
+                {
+                    return false; 
+                }
+                orderToUpdate.Status = orderStatus;
+                await db.SaveChangesAsync();
+                return true;
+            }
+        }));
 }
