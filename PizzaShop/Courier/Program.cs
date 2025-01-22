@@ -16,7 +16,7 @@ hostBuilder.Services.AddHostedService<AsbMessagePumpService<DeliveryManifest>>(s
 hostBuilder.Services.AddHostedService<AsbMessagePumpService<OrderReady>>(serviceProvider => AddHostedOrderReadyService(hostBuilder.Configuration, serviceProvider));
 hostBuilder.Services.AddHostedService<DeliveryService>(serviceProvider => AddHostedDispatcherService(hostBuilder.Configuration, serviceProvider));
 
-hostBuilder.AddKafkaProducer<int, string>("messaging");
+hostBuilder.AddKafkaProducer<int, string>("courier-order-status");
 
 await hostBuilder.Build().RunAsync();
 

@@ -19,9 +19,9 @@ public class AvailabilityRequestHandler(string courierName, AsbProducer<JobAccep
         // we will probably randomize that, so that couriers reject some jobs
         
         if (_rejectJob)
-            await rejectedProducer.SendMessageAsync(courierName + "-job-accepted", new Message<JobRejected>(new JobRejected(job.OrderId, courierName)), token);
+            await rejectedProducer.SendMessageAsync(courierName + "-job-rejected", new Message<JobRejected>(new JobRejected(job.OrderId, courierName)), token);
         else
-            await acceptedProducer.SendMessageAsync(courierName + "-job-rejected", new Message<JobAccepted>(new JobAccepted(job.OrderId, courierName)), token);
+            await acceptedProducer.SendMessageAsync(courierName + "-job-accepted", new Message<JobAccepted>(new JobAccepted(job.OrderId, courierName)), token);
         return true;
     }
 }
