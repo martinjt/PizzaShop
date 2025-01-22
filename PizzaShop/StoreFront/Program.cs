@@ -5,6 +5,7 @@ using Azure.Messaging.ServiceBus;
 using Confluent.Kafka;
 using KafkaGateway;
 using Microsoft.EntityFrameworkCore;
+using Shared;
 using StoreFront;
 using StoreFront.Seed;
 
@@ -12,6 +13,9 @@ using StoreFront.Seed;
 string[] couriers = ["alice", "bob", "charlie"];
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddPizzaShopTelemetry("StoreFront");
+
 builder.Services.AddDbContext<PizzaShopDb>(opt => opt.UseInMemoryDatabase("TodoList"));
 builder.AddKafkaConsumer<int, string>("courier-order-status", settings =>
 {
@@ -56,7 +60,6 @@ app.MapGet("/orders", async (PizzaShopDb db) =>
             .Include(o => o.Pizzas)
             .ThenInclude(p => p.Toppings)
             .ThenInclude(t => t.Topping)
-            .Include(o => o.DeliveryAddress)
             .ToListAsync();
     })
     .WithSummary("Retrieve all orders")
@@ -68,7 +71,6 @@ app.MapGet("/orders/pending", async (PizzaShopDb db) =>
                 .Include(o => o.Pizzas)
                 .ThenInclude(p => p.Toppings)
                 .ThenInclude(t => t.Topping)
-                .Include(o => o.DeliveryAddress)
                 .ToListAsync();
     })
     .WithSummary("Retrieve all pending orders")
@@ -82,7 +84,6 @@ app.MapGet("/orders/{id}", async ([Description("The id of the order to watch")] 
                 .Include(o => o.Pizzas)
                 .ThenInclude(p => p.Toppings)
                 .ThenInclude(t => t.Topping)
-                .Include(o => o.DeliveryAddress)
                 .SingleOrDefaultAsync();
         
         return order != null
