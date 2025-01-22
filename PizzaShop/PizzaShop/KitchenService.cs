@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Threading.Channels;
 using AsbGateway;
 using Microsoft.Extensions.Hosting;
@@ -22,20 +23,28 @@ public class KitchenService(
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var request = await cookRequests.Reader.ReadAsync(stoppingToken);
-            
-            //cook the pizza
-            await Task.Delay(5000, stoppingToken); //simulate cooking time
-            
-            //await the courier to accept the order -- assume the first available courier will accept
-            var courierStatusUpdate = await courierStatusUpdates.Reader.ReadAsync(stoppingToken);
-            if (courierStatusUpdate.Status == CourierStatus.Accepted)
-                await readyProducer.SendMessageAsync(
-                    courierStatusUpdate.CourierId + "-order-ready", 
-                    new Message<OrderReady>(new OrderReady(request.OrderId, courierStatusUpdate.CourierId)), stoppingToken);
-             
-            //NOTE: we don't handle the case where the courier rejects the order, this is deliberate for the purpose of this demo
-            //in principle we would need to handle this case and reassign the order to another courier
+            try
+            {
+                var request = await cookRequests.Reader.ReadAsync(stoppingToken);
+
+                //cook the pizza
+                //NOTE -- removed for debugging purposes
+                //await Task.Delay(5000, stoppingToken); //simulate cooking time
+
+                //await the courier to accept the order -- assume the first available courier will accept
+                var courierStatusUpdate = await courierStatusUpdates.Reader.ReadAsync(stoppingToken);
+                if (courierStatusUpdate.Status == CourierStatus.Accepted)
+                    await readyProducer.SendMessageAsync(
+                        courierStatusUpdate.CourierId + "-order-ready",
+                        new Message<OrderReady>(new OrderReady(request.OrderId, courierStatusUpdate.CourierId)), stoppingToken);
+
+                //NOTE: we don't handle the case where the courier rejects the order, this is deliberate for the purpose of this demo
+                //in principle we would need to handle this case and reassign the order to another courier
+            }
+            catch (OperationCanceledException oce)
+            {
+                Debug.WriteLine(oce.Message);
+            }
         }
     }
 }

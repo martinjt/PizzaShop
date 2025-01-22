@@ -20,43 +20,30 @@ var courierStatusUpdates = Channel.CreateBounded<CourierStatusUpdate>(10);
 //our collection of couriers, names are used within queues & streams as well
 string[] couriers = ["alice", "bob", "charlie"];
 
-var hostBuilder = new HostBuilder()
-    .ConfigureHostConfiguration((config) =>
-    {
-        config.AddEnvironmentVariables();
-    })
-    .ConfigureAppConfiguration((hostContext, config) =>
-    {
-        config.SetBasePath(Environment.CurrentDirectory);
-        config.AddJsonFile("appsettings.json", optional: false);
-        config.AddJsonFile($"appsettings.{hostContext.HostingEnvironment.EnvironmentName}.json", optional: true);
-        config.AddEnvironmentVariables();
-    })
-    .ConfigureServices((hostContext, services) =>
-    {
-        //we use multiple pumps, because we don't want all channels to become unresponsive because one gets busy!!! In practice, we would
-        //want competing consumers here
-        services.AddHostedService<AsbMessagePumpService<Order>>(serviceProvider => AddHostedOrderService(hostContext, serviceProvider));
+var hostBuilder = new HostApplicationBuilder();
+//we use multiple pumps, because we don't want all channels to become unresponsive because one gets busy!!! In practice, we would
+
+//want competing consumers here
+ hostBuilder.Services.AddHostedService<AsbMessagePumpService<Order>>(serviceProvider => AddHostedOrderService(hostBuilder.Configuration, serviceProvider));
         
-        //we have distinct queues for job accepted and job rejected to listen to each courier - all post to the same channel
-        foreach (var courier in couriers)
-        {
-            //work around the problem of multiple service registration by using a singleton explicity, see https://github.com/dotnet/runtime/issues/38751
-            services.AddSingleton<IHostedService, AsbMessagePumpService<JobAccepted>>(serviceProvider => AddHostedJobAcceptedService($"{courier}-job-accepted", hostContext, serviceProvider));
-            services.AddSingleton<IHostedService, AsbMessagePumpService<JobRejected>>(serviceProvider => AddHostedJobRejectedService($"{courier}-job-rejected", hostContext, serviceProvider));
-        }
-        
-        //We use channels for our internal pipeline. Channels let us easily wait on work without synchronization primitives
-        services.AddHostedService<KitchenService>(_ => AddHostedKitchenService(hostContext));
-        services.AddHostedService<DispatchService>(_ => AddHostedDispatcherService(hostContext));
-    });
+//we have distinct queues for job accepted and job rejected to listen to each courier - all post to the same channel
+foreach (var courier in couriers)
+{
+    //work around the problem of multiple service registration by using a singleton explicity, see https://github.com/dotnet/runtime/issues/38751
+    hostBuilder.Services.AddSingleton<IHostedService, AsbMessagePumpService<JobAccepted>>(serviceProvider => AddHostedJobAcceptedService($"{courier}-job-accepted", hostBuilder.Configuration, serviceProvider));
+    hostBuilder.Services.AddSingleton<IHostedService, AsbMessagePumpService<JobRejected>>(serviceProvider => AddHostedJobRejectedService($"{courier}-job-rejected", hostBuilder.Configuration, serviceProvider));
+}
+
+//We use channels for our internal pipeline. Channels let us easily wait on work without synchronization primitives
+hostBuilder.Services.AddHostedService<KitchenService>(_ => AddHostedKitchenService(hostBuilder.Configuration));
+hostBuilder.Services.AddHostedService<DispatchService>(_ => AddHostedDispatcherService(hostBuilder.Configuration));
 
 await hostBuilder.Build().RunAsync();
 
-AsbMessagePumpService<Order> AddHostedOrderService(HostBuilderContext hostBuilderContext, IServiceProvider serviceProvider)
+AsbMessagePumpService<Order> AddHostedOrderService(ConfigurationManager configurationManager, IServiceProvider serviceProvider)
 {
-    var connectionString = hostBuilderContext.Configuration["ServiceBus:ConnectionString"];
-    var queueName = hostBuilderContext.Configuration["ServiceBus:OrderQueueName"];
+    var connectionString = configurationManager.GetValue<string>("ServiceBus:ConnectionString");
+    var queueName = configurationManager.GetValue<string>("ServiceBus:OrderQueueName");
             
     if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(queueName))
     {
@@ -73,9 +60,9 @@ AsbMessagePumpService<Order> AddHostedOrderService(HostBuilderContext hostBuilde
         async (order, token) => await new PlaceOrderHandler(cookRequests, deliveryRequests, couriers).HandleAsync(order, token));
 }
 
-AsbMessagePumpService<JobAccepted> AddHostedJobAcceptedService(string queueName, HostBuilderContext hostBuilderContext, IServiceProvider serviceProvider1)
+AsbMessagePumpService<JobAccepted> AddHostedJobAcceptedService(string queueName, ConfigurationManager configurationManager, IServiceProvider serviceProvider1)
 {
-    var connectionString = hostBuilderContext.Configuration["ServiceBus:ConnectionString"];
+    var connectionString = configurationManager.GetValue<string>("ServiceBus:ConnectionString");
             
     if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(queueName))
     {
@@ -92,9 +79,9 @@ AsbMessagePumpService<JobAccepted> AddHostedJobAcceptedService(string queueName,
         async (jobAccepted, token) => await new JobAcceptedHandler(courierStatusUpdates).HandleAsync(jobAccepted, token));
 }
 
-AsbMessagePumpService<JobRejected> AddHostedJobRejectedService(string queueName, HostBuilderContext hostBuilderContext, IServiceProvider serviceProvider2)
+AsbMessagePumpService<JobRejected> AddHostedJobRejectedService(string queueName, ConfigurationManager configurationManager, IServiceProvider serviceProvider2)
 {
-    var connectionString = hostBuilderContext.Configuration["ServiceBus:ConnectionString"];
+    var connectionString = configurationManager.GetValue<string>("ServiceBus:ConnectionString");
             
     if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(queueName))
     {
@@ -111,9 +98,9 @@ AsbMessagePumpService<JobRejected> AddHostedJobRejectedService(string queueName,
         async (jobRejected, token) => await new JobRejectedHandler(courierStatusUpdates).HandleAsync(jobRejected, token));
 }
 
-KitchenService AddHostedKitchenService(HostBuilderContext hostBuilderContext)
+KitchenService AddHostedKitchenService(ConfigurationManager configurationManager)
 {
-    var connectionString = hostBuilderContext.Configuration["ServiceBus:ConnectionString"];
+    var connectionString = configurationManager.GetValue<string>("ServiceBus:ConnectionString");
             
     if (string.IsNullOrEmpty(connectionString))
     {
@@ -131,9 +118,9 @@ KitchenService AddHostedKitchenService(HostBuilderContext hostBuilderContext)
     return new KitchenService(cookRequests, courierStatusUpdates, orderProducer, rejectedProducer);
 }
 
-DispatchService AddHostedDispatcherService(HostBuilderContext hostBuilderContext)
+DispatchService AddHostedDispatcherService(ConfigurationManager configurationManager)
 {
-    var connectionString = hostBuilderContext.Configuration["ServiceBus:ConnectionString"];
+    var connectionString = configurationManager.GetValue<string>("ServiceBus:ConnectionString");
 
     if (string.IsNullOrEmpty(connectionString))
     {
