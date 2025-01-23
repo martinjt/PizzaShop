@@ -5,7 +5,7 @@ namespace KafkaGateway;
 
 public class KafkaProducerFactory<TKey, TValue>
 {
-    public static IProducer<TKey, TValue> Create(string bootStrapServer)
+    public static ProducerBuilder<TKey, TValue> Create(string bootStrapServer)
     {
         var producerConfig = new ProducerConfig
         {
@@ -20,6 +20,6 @@ public class KafkaProducerFactory<TKey, TValue>
         
         //NOTE: Change to InstrumentedProducerBuilder to enable metrics
         var producerBuilder = new ProducerBuilder<TKey, TValue>(producerConfig);
-        return producerBuilder.Build();
+        return producerBuilder.AsInstrumentedProducerBuilder();
     }
 }

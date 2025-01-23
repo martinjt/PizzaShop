@@ -2,8 +2,11 @@ using System.ComponentModel;
 using System.Text.Json;
 using AsbGateway;
 using Azure.Messaging.ServiceBus;
+using Confluent.Kafka;
 using KafkaGateway;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Trace;
 using Shared;
 using StoreFront;
 using StoreFront.Seed;
@@ -15,7 +18,20 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddPizzaShopTelemetry("StoreFront");
 
-builder.Services.AddDbContext<PizzaShopDb>(opt => opt.UseInMemoryDatabase("TodoList"));
+var connectionString = "DataSource=storefront;mode=memory;cache=shared";
+var keepAliveConnection = new SqliteConnection(connectionString);
+keepAliveConnection.Open();
+
+builder.Services.AddDbContext<PizzaShopDb>(opt => opt.UseSqlite(connectionString));
+
+builder.Services.AddSingleton(
+    KafkaConsumerFactory<int, string>
+        .Create("localhost:9092", "storefront-consumer-group")
+        .AsInstrumentedConsumerBuilder());
+builder.Services.AddTransient(serviceProvider => 
+    serviceProvider.GetRequiredService<InstrumentedConsumerBuilder<int, string>>().Build());
+
+builder.Services.AddOpenTelemetry().WithTracing(builder => builder.AddKafkaConsumerInstrumentation<int, string>());
 
 // Listens to status updates about an order
 // Normally, we would tend to run a Kafka worker in a separate process, so that we could scale out to the number of
@@ -28,8 +44,7 @@ foreach (var courier in couriers)
     builder.Services.AddSingleton<IHostedService, KafkaMessagePumpService<int, string>>(serviceProvider =>
     {
         //we want a consumer per topic, so we can track the status of each courier's orders
-        var consumer = KafkaConsumerFactory<int, string>.Create("localhost:9092", "storefront-consumer-group");
-        return OrderServiceFactory.Create(courier + "-order-status", consumer, serviceProvider);
+        return OrderServiceFactory.Create(courier + "-order-status", serviceProvider);
     });
 }
 

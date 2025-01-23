@@ -6,8 +6,9 @@ namespace StoreFront;
 
 internal static class OrderServiceFactory
 {
-    public static KafkaMessagePumpService<int, string> Create(string topic, IConsumer<int, string> consumer, IServiceProvider serviceProvider)
+    public static KafkaMessagePumpService<int, string> Create(string topic, IServiceProvider serviceProvider)
     {
+        var consumer = serviceProvider.GetRequiredService<IConsumer<int, string>>();
         if (consumer is null) throw new InvalidOperationException("No Kafka Consumer registered");
     
         var logger = serviceProvider.GetRequiredService<ILogger<KafkaMessagePump<int, string>>>();
@@ -20,7 +21,6 @@ internal static class OrderServiceFactory
             {
                 var orderId = key;
                 var orderStatus = Enum.Parse<OrderStatus>(value);
-            
                 {
                     var db = serviceProvider.GetService<PizzaShopDb>();
                     if (db is null) throw new InvalidOperationException("No  EF Context");

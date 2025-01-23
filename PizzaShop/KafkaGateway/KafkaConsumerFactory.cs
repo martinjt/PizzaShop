@@ -4,7 +4,8 @@ namespace KafkaGateway;
 
 public static class KafkaConsumerFactory<TKey,TValue>
 {
-    public static IConsumer<TKey, TValue> Create(string bootstrapServer, string groupId)
+
+    public static ConsumerBuilder<TKey, TValue> Create(string bootstrapServer, string groupId)
     {
         var consumerConfig = new ConsumerConfig
         {
@@ -18,6 +19,6 @@ public static class KafkaConsumerFactory<TKey,TValue>
 
         //NOTE: Change to InstrumentedConsumerBuilder to enable metrics
         var consumerBuilder = new ConsumerBuilder<TKey, TValue>(consumerConfig);
-        return consumerBuilder.Build();
+        return consumerBuilder.AsInstrumentedConsumerBuilder();
     }
 }

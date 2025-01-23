@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -16,7 +16,11 @@ public static class TelemetryExtensions
                 builder
                 .AddSource(serviceName)
                 .AddSource(AsbGateway.DiagnosticSettings.Source.Name)
-                .AddAspNetCoreInstrumentation();
+                .AddAspNetCoreInstrumentation()
+                .AddEntityFrameworkCoreInstrumentation(options => {
+                    options.SetDbStatementForText = true;
+                    options.SetDbStatementForStoredProcedure = true;
+                });
 
                 if (additionalSources != null)
                 {
