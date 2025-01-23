@@ -8,24 +8,24 @@ services:
     ports:
       - "5672:5672"
     environment:
-      SQL_SERVER: sqledge  
+      SQL_SERVER: mssql  
       MSSQL_SA_PASSWORD: "1tslocal!dontcare"
       ACCEPT_EULA: "Y"
     depends_on:
-      - sqledge
+      - mssql
     networks:
       sb-emulator:
         aliases:
           - "sb-emulator"
-  sqledge:
-        container_name: "sqledge"
-        image: "mcr.microsoft.com/azure-sql-edge:latest"
-        networks:
-          sb-emulator:
-            aliases:
-              - "sqledge"
-        environment:
-          ACCEPT_EULA: "Y"
-          MSSQL_SA_PASSWORD: "1tslocal!dontcare"
+  mssql:
+    container_name: "mssql"
+    image: "mcr.microsoft.com/mssql/server:2022-latest"
+    networks:
+      sb-emulator:
+        aliases:
+          - "mssql"
+    environment:
+      MSSQL_SA_PASSWORD: "1tslocal!dontcare"
+      ACCEPT_EULA: "Y"
 networks:
   sb-emulator:

@@ -67,6 +67,7 @@ app.MapGet("/orders/pending", async (PizzaShopDb db) =>
                 .Include(o => o.Pizzas)
                 .ThenInclude(p => p.Toppings)
                 .ThenInclude(t => t.Topping)
+                .Include(o => o.DeliveryAddress)
                 .ToListAsync();
     })
     .WithSummary("Retrieve all pending orders")
@@ -80,6 +81,7 @@ app.MapGet("/orders/{id}", async ([Description("The id of the order to watch")] 
                 .Include(o => o.Pizzas)
                 .ThenInclude(p => p.Toppings)
                 .ThenInclude(t => t.Topping)
+                .Include(o => o.DeliveryAddress)
                 .SingleOrDefaultAsync();
         
         return order != null
@@ -116,6 +118,7 @@ app.MapPost("/orders", async ([Description("The pizza order you wish to make")]O
         .Include(o => o.Pizzas)
         .ThenInclude(p => p.Toppings)
         .ThenInclude(t => t.Topping)
+        .Include(o => o.DeliveryAddress)
         .SingleOrDefaultAsync();
 
     return Results.Accepted($"/orders/{order.OrderId}", pendingOrder);
