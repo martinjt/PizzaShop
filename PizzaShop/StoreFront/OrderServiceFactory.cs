@@ -6,16 +6,15 @@ namespace StoreFront;
 
 internal static class OrderServiceFactory
 {
-    public static KafkaMessagePumpService<int, string> Create(string queueName, IServiceProvider serviceProvider)
+    public static KafkaMessagePumpService<int, string> Create(string topic, IConsumer<int, string> consumer, IServiceProvider serviceProvider)
     {
-        var consumer = serviceProvider.GetService<IConsumer<int, string>>();
         if (consumer is null) throw new InvalidOperationException("No Kafka Consumer registered");
     
         var logger = serviceProvider.GetRequiredService<ILogger<KafkaMessagePump<int, string>>>();
     
         return new KafkaMessagePumpService<int, string>(
             consumer, 
-            queueName, 
+            topic, 
             logger,
             (async (key, value) =>
             {

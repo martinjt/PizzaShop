@@ -9,6 +9,7 @@
     <ItemGroup>
       <PackageReference Include="Confluent.Kafka" Version="2.8.0" />
       <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.0" />
+      <PackageReference Include="OpenTelemetry.Instrumentation.ConfluentKafka" Version="0.1.0-alpha.2" />
     </ItemGroup>
 
 </Project>

@@ -1,5 +1,7 @@
 ﻿using System.Threading.Channels;
+using Confluent.Kafka;
 using Courier;
+using KafkaGateway;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +25,7 @@ hostBuilder.Services.AddHostedService(serviceProvider =>AvailabilityServiceFacto
 hostBuilder.Services.AddHostedService(serviceProvider => OrderReadyServiceFactory.Create(hostBuilder.Configuration, serviceProvider));
 hostBuilder.Services.AddHostedService(serviceProvider => DispatcherServiceFactory.Create(hostBuilder.Configuration, serviceProvider));
 
-hostBuilder.AddKafkaProducer<int, string>("courier-order-status");
+//only need the one producer for the order status updates
+hostBuilder.Services.AddSingleton<IProducer<int, string>>(serviceProvider => KafkaProducerFactory<int, string>.Create("localhost:9092"));
 
 await hostBuilder.Build().RunAsync();
