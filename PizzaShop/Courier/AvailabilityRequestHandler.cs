@@ -8,7 +8,7 @@ namespace Courier;
 /// <param name="courierName">The name of this courier - used to address the matching queue</param>
 /// <param name="acceptedProducer">The producer for an accept message</param>
 /// <param name="rejectedProducer">The producer for a reject message</param>
-public class AvailabilityRequestHandler(string courierName, AsbProducer<JobAccepted> acceptedProducer, AsbProducer<JobRejected> rejectedProducer)
+internal class AvailabilityRequestHandler(string courierName, AsbProducer<JobAccepted> acceptedProducer, AsbProducer<JobRejected> rejectedProducer)
 {
     //use this to fake different paths
     private readonly bool _rejectJob = false;

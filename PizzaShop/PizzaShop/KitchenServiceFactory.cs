@@ -6,9 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace PizzaShop;
 
-internal class KitchenServiceFactory
+internal static class KitchenServiceFactory
 {
-    public static KitchenService AddHostedKitchenService(IServiceProvider serviceProvider)
+    public static KitchenService Create(IServiceProvider serviceProvider)
     {
         var client = serviceProvider.GetRequiredService<ServiceBusClient>();
         var cookRequests = serviceProvider.GetRequiredService<Channel<CookRequest>>();

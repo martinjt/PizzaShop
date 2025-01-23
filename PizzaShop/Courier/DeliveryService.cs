@@ -12,7 +12,7 @@ namespace Courier;
 /// <param name="orderStatusTopic">The stream to produce updates to</param>
 /// <param name="deliveryJobs">A channel for delivery jobs, we will trigger when one of these is received</param>
 /// <param name="orderStatusProducer"></param>
-public class DeliveryService(string orderStatusTopic, Channel<OrderStatus> deliveryJobs, IProducer<int, string> orderStatusProducer) : BackgroundService
+internal class DeliveryService(string orderStatusTopic, Channel<OrderStatus> deliveryJobs, IProducer<int, string> orderStatusProducer) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

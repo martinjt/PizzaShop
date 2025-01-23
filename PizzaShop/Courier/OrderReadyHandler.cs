@@ -8,7 +8,7 @@ namespace Courier;
 /// </summary>
 /// <param name="courierName">The name of the courier, should be us</param>
 /// <param name="deliveryJobs">The queue of our waiting deliveryJobs</param>
-public class OrderReadyHandler(string courierName, Channel<OrderStatus> deliveryJobs)
+internal class OrderReadyHandler(string courierName, Channel<OrderStatus> deliveryJobs)
 {
     public async Task<bool> HandleAsync(OrderReady job, CancellationToken token)
     {

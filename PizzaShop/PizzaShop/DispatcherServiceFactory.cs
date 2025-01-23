@@ -6,10 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace PizzaShop;
 
-internal class DispatcherServiceFactory
+internal static class DispatcherServiceFactory
 {
-    
-    public static DispatchService AddHostedDispatcherService(IServiceProvider serviceProvider)
+    public static DispatchService Create(IServiceProvider serviceProvider)
     {
         var client = serviceProvider.GetRequiredService<ServiceBusClient>();
         var deliveryRequests = serviceProvider.GetRequiredService<Channel<DeliveryRequest>>();

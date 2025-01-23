@@ -34,7 +34,7 @@ builder.AddKafkaConsumer<int, string>("courier-order-status", settings =>
 foreach (var courier in couriers)
 {
     //work around the problem of multiple service registration by using a singleton explicity, see https://github.com/dotnet/runtime/issues/38751
-    builder.Services.AddSingleton<IHostedService, KafkaMessagePumpService<int, string>>(serviceProvider => AddAfterOrderService(courier + "-order-status", serviceProvider) );
+    builder.Services.AddSingleton<IHostedService, KafkaMessagePumpService<int, string>>(serviceProvider => OrderServiceFactory.Create(courier + "-order-status", serviceProvider) );
 }
 
 builder.Services.AddOpenApi();
@@ -153,34 +153,3 @@ async Task SendOrderAsync(Order order)
     await orderProducer.SendMessageAsync(queueName, new Message<Order>(order));
 }
 
-KafkaMessagePumpService<int, string> AddAfterOrderService(string queueName, IServiceProvider serviceProvider)
-{
-    var consumer = serviceProvider.GetService<IConsumer<int, string>>();
-    if (consumer is null) throw new InvalidOperationException("No Kafka Consumer registered");
-    
-    var logger = serviceProvider.GetRequiredService<ILogger<KafkaMessagePump<int, string>>>();
-    
-    return new KafkaMessagePumpService<int, string>(
-        consumer, 
-        queueName, 
-        logger,
-        (async (key, value) =>
-        {
-            var orderId = key;
-            var orderStatus = Enum.Parse<OrderStatus>(value);
-            
-            {
-                var db = serviceProvider.GetService<PizzaShopDb>();
-                if (db is null) throw new InvalidOperationException("No  EF Context");
-                
-                var orderToUpdate = await db.Orders.SingleOrDefaultAsync(o => o.OrderId == orderId);
-                if (orderToUpdate == null)
-                {
-                    return false; 
-                }
-                orderToUpdate.Status = orderStatus;
-                await db.SaveChangesAsync();
-                return true;
-            }
-        }));
-}

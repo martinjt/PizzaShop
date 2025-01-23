@@ -7,9 +7,9 @@ using Microsoft.Extensions.Logging;
 
 namespace PizzaShop;
 
-public class JobServiceFactory
+internal static class JobServiceFactory
 {
-    internal static AsbMessagePumpService<JobAccepted> AddHostedJobAcceptedService(string courierName, IServiceProvider serviceProvider)
+    internal static AsbMessagePumpService<JobAccepted> CreateAccepted(string courierName, IServiceProvider serviceProvider)
     {
         if (string.IsNullOrEmpty(courierName))
         {
@@ -28,7 +28,7 @@ public class JobServiceFactory
             async (jobAccepted, token) => await new JobAcceptedHandler(courierStatusUpdates).HandleAsync(jobAccepted, token));
     }
 
-    public static AsbMessagePumpService<JobRejected> AddHostedJobRejectedService(string courierName, IServiceProvider serviceProvider)
+    public static AsbMessagePumpService<JobRejected> CreateRejected(string courierName, IServiceProvider serviceProvider)
     {
         if (string.IsNullOrEmpty(courierName))
         {

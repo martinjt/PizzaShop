@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 
 namespace PizzaShop;
 
-public class OrderServiceFactory
+internal static class OrderServiceFactory
 {
     public static AsbMessagePumpService<Order> AddHostedOrderService(IServiceProvider serviceProvider)
     {

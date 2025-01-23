@@ -36,15 +36,15 @@ hostBuilder.Services.AddAzureClients(clientBuilder => {
 foreach (var courier in couriers)
 {
     //work around the problem of multiple service registration by using a singleton explicity, see https://github.com/dotnet/runtime/issues/38751
-    hostBuilder.Services.AddSingleton<IHostedService, AsbMessagePumpService<JobAccepted>>(serviceProvider => JobServiceFactory.AddHostedJobAcceptedService(courier, serviceProvider));
-    hostBuilder.Services.AddSingleton<IHostedService, AsbMessagePumpService<JobRejected>>(serviceProvider => JobServiceFactory.AddHostedJobRejectedService(courier, serviceProvider));
+    hostBuilder.Services.AddSingleton<IHostedService, AsbMessagePumpService<JobAccepted>>(serviceProvider => JobServiceFactory.CreateAccepted(courier, serviceProvider));
+    hostBuilder.Services.AddSingleton<IHostedService, AsbMessagePumpService<JobRejected>>(serviceProvider => JobServiceFactory.CreateRejected(courier, serviceProvider));
 }
 
 hostBuilder.Services.AddHostedService(serviceProvider => OrderServiceFactory.AddHostedOrderService(serviceProvider));
 
 //We use channels for our internal pipeline. Channels let us easily wait on work without synchronization primitives
-hostBuilder.Services.AddHostedService(serviceProvider => KitchenServiceFactory.AddHostedKitchenService(serviceProvider));
-hostBuilder.Services.AddHostedService(serviceProvider => DispatcherServiceFactory.AddHostedDispatcherService(serviceProvider));
+hostBuilder.Services.AddHostedService(serviceProvider => KitchenServiceFactory.Create(serviceProvider));
+hostBuilder.Services.AddHostedService(serviceProvider => DispatcherServiceFactory.Create(serviceProvider));
 
 
 await hostBuilder.Build().RunAsync();

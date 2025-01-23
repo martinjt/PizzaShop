@@ -1,14 +1,10 @@
 ﻿using System.Threading.Channels;
-using Confluent.Kafka;
 using Courier;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Identity.Client;
-using OpenTelemetry.Trace;
 using Shared;
-using static Courier.ServiceSetupHelpers;
 
 var hostBuilder = new HostApplicationBuilder();
 
@@ -23,9 +19,9 @@ hostBuilder.Services.AddAzureClients(clientBuilder => {
 
 hostBuilder.Services.AddSingleton(Channel.CreateBounded<OrderStatus>(10));
 
-hostBuilder.Services.AddHostedService(serviceProvider => AddHostedAvailabilityRequestService(hostBuilder.Configuration, serviceProvider));
-hostBuilder.Services.AddHostedService(serviceProvider => AddHostedOrderReadyService(hostBuilder.Configuration, serviceProvider));
-hostBuilder.Services.AddHostedService(serviceProvider => AddHostedDispatcherService(hostBuilder.Configuration, serviceProvider));
+hostBuilder.Services.AddHostedService(serviceProvider =>AvailabilityServiceFactory. Create(hostBuilder.Configuration, serviceProvider));
+hostBuilder.Services.AddHostedService(serviceProvider => OrderReadyServiceFactory.Create(hostBuilder.Configuration, serviceProvider));
+hostBuilder.Services.AddHostedService(serviceProvider => DispatcherServiceFactory.Create(hostBuilder.Configuration, serviceProvider));
 
 hostBuilder.AddKafkaProducer<int, string>("courier-order-status");
 
