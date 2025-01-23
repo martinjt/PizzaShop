@@ -1,6 +1,7 @@
 using System.Threading.Channels;
 using AsbGateway;
 using Microsoft.Extensions.Hosting;
+using Shared;
 
 namespace PizzaShop;
 
@@ -16,6 +17,7 @@ internal class DispatchService(Channel<DeliveryRequest> deliveryRequests, AsbPro
         while (!stoppingToken.IsCancellationRequested)
         {
             var request = await deliveryRequests.Reader.ReadAsync(stoppingToken);
+            using var activity = request.SetCurrentTraceContext();
 
             await producer.SendMessageAsync(request.CourierId + "-availability", new Message<DeliveryManifest>(new DeliveryManifest(request)), stoppingToken);
         }

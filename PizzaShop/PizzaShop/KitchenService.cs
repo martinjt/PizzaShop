@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Threading.Channels;
 using AsbGateway;
 using Microsoft.Extensions.Hosting;
+using Shared;
 
 namespace PizzaShop;
 
@@ -23,9 +24,11 @@ internal class KitchenService(
     {
         while (!stoppingToken.IsCancellationRequested)
         {
+            Activity? activity = null;
             try
             {
                 var request = await cookRequests.Reader.ReadAsync(stoppingToken);
+                activity = request.SetCurrentTraceContext();
 
                 //cook the pizza
                 //NOTE -- removed for debugging purposes
@@ -43,7 +46,11 @@ internal class KitchenService(
             }
             catch (OperationCanceledException oce)
             {
+                activity?.AddException(oce);
                 Debug.WriteLine(oce.Message);
+            }
+            finally{
+                activity?.Dispose();
             }
         }
     }

@@ -1,4 +1,5 @@
-﻿using System.Threading.Channels;
+﻿using System.Diagnostics;
+using System.Threading.Channels;
 using AsbGateway;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
@@ -24,7 +25,7 @@ hostBuilder.Services.Configure<CourierSettings>(hostBuilder.Configuration.GetSec
 hostBuilder.Services.Configure<ServiceBusSettings>(hostBuilder.Configuration.GetSection("ServiceBus"));
 var couriers = hostBuilder.Configuration.GetSection("Courier").Get<CourierSettings>()?.Names ?? Array.Empty<string>();
 
-hostBuilder.Services.AddPizzaShopTelemetry("PizzaShop");
+hostBuilder.Services.AddPizzaShopTelemetry("PizzaShop", additionalSources: [DiagnosticConfig.Source.Name]);
 
 //we use multiple pumps, because we don't want all channels to become unresponsive because one gets busy!!! In practice, we would
 //want competing consumers here
@@ -48,3 +49,9 @@ hostBuilder.Services.AddHostedService(serviceProvider => DispatcherServiceFactor
 
 
 await hostBuilder.Build().RunAsync();
+
+public static class DiagnosticConfig
+{
+    public const string ServiceName = "PizzaShop";
+    public static ActivitySource Source = new (ServiceName);
+}

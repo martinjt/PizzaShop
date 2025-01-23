@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -15,6 +15,7 @@ public static class TelemetryExtensions
             .WithTracing(builder => {
                 builder
                 .AddSource(serviceName)
+                .AddSource(TraceableRequestExtensions.Source.Name)
                 .AddSource(AsbGateway.DiagnosticSettings.Source.Name)
                 .AddAspNetCoreInstrumentation()
                 .AddEntityFrameworkCoreInstrumentation(options => {
