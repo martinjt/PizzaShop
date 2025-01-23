@@ -1,14 +1,12 @@
-﻿using System.Text.Json;
-using System.Threading.Channels;
+﻿using System.Threading.Channels;
 using AsbGateway;
-using Azure.Messaging.ServiceBus;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using PizzaShop;
 using Shared;
+using static PizzaShop.ServiceSetupHelpers;
 
 //our pizza shop has internal channels for its orchestration
 // -- cookrequests are sent to the kitchen
@@ -17,42 +15,38 @@ using Shared;
 
 
 //our collection of couriers, names are used within queues & streams as well
-var hostBuilder = new HostBuilder()
-    .ConfigureAppConfiguration((hostContext, config) =>
-    {
-        config.AddEnvironmentVariables();
-    })
-    .ConfigureServices((hostContext, services) =>
-    {
-        services.AddSingleton(Channel.CreateBounded<CookRequest>(10));
-        services.AddSingleton(Channel.CreateBounded<DeliveryRequest>(10));
-        services.AddSingleton(Channel.CreateBounded<CourierStatusUpdate>(10));
+var hostBuilder = new HostApplicationBuilder();
 
-        services.Configure<CourierSettings>(hostContext.Configuration.GetSection("Courier"));
-        services.Configure<ServiceBusSettings>(hostContext.Configuration.GetSection("ServiceBus"));
-        var couriers = hostContext.Configuration.GetSection("Courier").Get<CourierSettings>()?.Names ?? Array.Empty<string>();
+hostBuilder.Services.AddSingleton(Channel.CreateBounded<CookRequest>(10));
+hostBuilder.Services.AddSingleton(Channel.CreateBounded<DeliveryRequest>(10));
+hostBuilder.Services.AddSingleton(Channel.CreateBounded<CourierStatusUpdate>(10));
 
-        services.AddPizzaShopTelemetry("PizzaShop");
-        //we use multiple pumps, because we don't want all channels to become unresponsive because one gets busy!!! In practice, we would
-        //want competing consumers here
-        services.AddAzureClients(clientBuilder => {
-            clientBuilder.AddServiceBusClient(hostContext.Configuration["ServiceBus:ConnectionString"]);
-        });
+hostBuilder.Services.Configure<CourierSettings>(hostBuilder.Configuration.GetSection("Courier"));
+hostBuilder.Services.Configure<ServiceBusSettings>(hostBuilder.Configuration.GetSection("ServiceBus"));
+var couriers = hostBuilder.Configuration.GetSection("Courier").Get<CourierSettings>()?.Names ?? Array.Empty<string>();
 
-        //we have distinct queues for job accepted and job rejected to listen to each courier - all post to the same channel
-        foreach (var courier in couriers)
-        {
-            //work around the problem of multiple service registration by using a singleton explicity, see https://github.com/dotnet/runtime/issues/38751
-            services.AddSingleton<IHostedService, AsbMessagePumpService<JobAccepted>>(serviceProvider => ServiceSetupHelpers.AddHostedJobAcceptedService(courier, serviceProvider));
-            services.AddSingleton<IHostedService, AsbMessagePumpService<JobRejected>>(serviceProvider => ServiceSetupHelpers.AddHostedJobRejectedService(courier, serviceProvider));
-        }
+hostBuilder.Services.AddPizzaShopTelemetry("PizzaShop");
 
-        services.AddHostedService(ServiceSetupHelpers.AddHostedOrderService);
+//we use multiple pumps, because we don't want all channels to become unresponsive because one gets busy!!! In practice, we would
+//want competing consumers here
+hostBuilder.Services.AddAzureClients(clientBuilder => {
+    clientBuilder.AddServiceBusClient(hostBuilder.Configuration["ServiceBus:ConnectionString"]);
+});
 
-        //We use channels for our internal pipeline. Channels let us easily wait on work without synchronization primitives
-        services.AddHostedService(ServiceSetupHelpers.AddHostedKitchenService);
-        services.AddHostedService(ServiceSetupHelpers.AddHostedDispatcherService);
-    });
+//we have distinct queues for job accepted and job rejected to listen to each courier - all post to the same channel
+foreach (var courier in couriers)
+{
+    //work around the problem of multiple service registration by using a singleton explicity, see https://github.com/dotnet/runtime/issues/38751
+    hostBuilder.Services.AddSingleton<IHostedService, AsbMessagePumpService<JobAccepted>>(serviceProvider => AddHostedJobAcceptedService(courier, serviceProvider));
+    hostBuilder.Services.AddSingleton<IHostedService, AsbMessagePumpService<JobRejected>>(serviceProvider => AddHostedJobRejectedService(courier, serviceProvider));
+}
+
+hostBuilder.Services.AddHostedService(AddHostedOrderService);
+
+//We use channels for our internal pipeline. Channels let us easily wait on work without synchronization primitives
+hostBuilder.Services.AddHostedService(AddHostedKitchenService);
+hostBuilder.Services.AddHostedService(AddHostedDispatcherService);
+
 
 await hostBuilder.Build().RunAsync();
 

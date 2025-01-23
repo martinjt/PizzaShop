@@ -8,7 +8,9 @@ var kafka = builder.AddKafka("courier-order-status", 9092)
     .WithKafkaUI();
 
 builder.AddProject<Projects.StoreFront>("store-front")
-    .WithReference(kafka);
+    .WithReference(kafka)
+    .WithEnvironment("ServiceBus__OrderQueueName", OrderQueueName)
+    .WithEnvironment("ServiceBus__ConnectionString", ServiceBusConnectionString);
 
 var pizzashop = builder.AddProject<Projects.PizzaShop>("pizza-shop")
     .WithEnvironment("ServiceBus__OrderQueueName", OrderQueueName)
@@ -20,10 +22,8 @@ for (int i = 0; i < couriers.Length; i++)
 
     builder.AddProject<Projects.Courier>("courier-" + i)
         .WithReference(kafka)
+        .WithEnvironment("ServiceBus__ConnectionString", ServiceBusConnectionString)
         .WithEnvironment("Courier__Name", couriers[i]);
 }
-
-builder.AddProject<Projects.Courier>("courier")
-    .WithReference(kafka);
 
 builder.Build().Run();
