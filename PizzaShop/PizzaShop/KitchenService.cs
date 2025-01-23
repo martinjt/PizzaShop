@@ -12,7 +12,7 @@ namespace PizzaShop;
 /// <param name="courierStatusUpdates">A queue of responses from the courier to pick up the order</param>
 /// <param name="readyProducer"></param>
 /// <param name="rejectedProducer"></param>
-public class KitchenService(
+internal class KitchenService(
     Channel<CookRequest> cookRequests, 
     Channel<CourierStatusUpdate> courierStatusUpdates, 
     AsbProducer<OrderReady> readyProducer,

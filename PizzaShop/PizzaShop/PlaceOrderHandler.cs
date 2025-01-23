@@ -9,7 +9,7 @@ namespace PizzaShop;
 /// <param name="cookRequests">The channel for requests to cook - we produce to this</param>
 /// <param name="deliveryRequests">The channel for requests to delivery - we produce to this</param>
 /// <param name="couriers">The set of couriers that we can deliver to; we select at random from this</param>
-public class PlaceOrderHandler(Channel<CookRequest> cookRequests, Channel<DeliveryRequest> deliveryRequests, string[] couriers)
+internal class PlaceOrderHandler(Channel<CookRequest> cookRequests, Channel<DeliveryRequest> deliveryRequests, string[] couriers)
 {
     public async Task<bool> HandleAsync(Order order, CancellationToken cancellationToken)
     {

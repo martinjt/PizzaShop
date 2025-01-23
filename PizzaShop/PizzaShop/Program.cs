@@ -6,7 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PizzaShop;
 using Shared;
-using static PizzaShop.ServiceSetupHelpers;
 
 //our pizza shop has internal channels for its orchestration
 // -- cookrequests are sent to the kitchen
@@ -37,27 +36,15 @@ hostBuilder.Services.AddAzureClients(clientBuilder => {
 foreach (var courier in couriers)
 {
     //work around the problem of multiple service registration by using a singleton explicity, see https://github.com/dotnet/runtime/issues/38751
-    hostBuilder.Services.AddSingleton<IHostedService, AsbMessagePumpService<JobAccepted>>(serviceProvider => AddHostedJobAcceptedService(courier, serviceProvider));
-    hostBuilder.Services.AddSingleton<IHostedService, AsbMessagePumpService<JobRejected>>(serviceProvider => AddHostedJobRejectedService(courier, serviceProvider));
+    hostBuilder.Services.AddSingleton<IHostedService, AsbMessagePumpService<JobAccepted>>(serviceProvider => JobServiceFactory.AddHostedJobAcceptedService(courier, serviceProvider));
+    hostBuilder.Services.AddSingleton<IHostedService, AsbMessagePumpService<JobRejected>>(serviceProvider => JobServiceFactory.AddHostedJobRejectedService(courier, serviceProvider));
 }
 
-hostBuilder.Services.AddHostedService(AddHostedOrderService);
+hostBuilder.Services.AddHostedService(serviceProvider => OrderServiceFactory.AddHostedOrderService(serviceProvider));
 
 //We use channels for our internal pipeline. Channels let us easily wait on work without synchronization primitives
-hostBuilder.Services.AddHostedService(AddHostedKitchenService);
-hostBuilder.Services.AddHostedService(AddHostedDispatcherService);
+hostBuilder.Services.AddHostedService(serviceProvider => KitchenServiceFactory.AddHostedKitchenService(serviceProvider));
+hostBuilder.Services.AddHostedService(serviceProvider => DispatcherServiceFactory.AddHostedDispatcherService(serviceProvider));
 
 
 await hostBuilder.Build().RunAsync();
-
-public class CourierSettings
-{
-    public string[]? Names { get; set; }
-}
-
-public class ServiceBusSettings
-{
-    public string OrderQueueName { get; set; } = string.Empty;
-    public string JobAcceptedQueueName { get; set; } = string.Empty;
-    public string JobRejectedQueueName { get; set; } = string.Empty;
-}

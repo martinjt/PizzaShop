@@ -9,7 +9,7 @@ namespace PizzaShop;
 /// </summary>
 /// <param name="deliveryRequests">The channel of deliveryRequests from the Kitchen</param>
 /// <param name="producer">The ASB producer for delivery requests</param>
-public class DispatchService(Channel<DeliveryRequest> deliveryRequests, AsbProducer<DeliveryManifest> producer) : BackgroundService
+internal class DispatchService(Channel<DeliveryRequest> deliveryRequests, AsbProducer<DeliveryManifest> producer) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
