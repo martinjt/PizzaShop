@@ -7,7 +7,7 @@ const string ServiceBusConnectionString = "Endpoint=sb://localhost;SharedAccessK
 var kafka = builder.AddKafka("courier-order-status", 9092)
     .WithKafkaUI();
 
-builder.AddProject<Projects.StoreFront>("store-front")
+var storefront = builder.AddProject<Projects.StoreFront>("store-front")
     .WithReference(kafka)
     .WithEnvironment("ServiceBus__OrderQueueName", OrderQueueName)
     .WithEnvironment("ServiceBus__ConnectionString", ServiceBusConnectionString);
@@ -19,6 +19,7 @@ var pizzashop = builder.AddProject<Projects.PizzaShop>("pizza-shop")
 for (int i = 0; i < couriers.Length; i++)
 {
     pizzashop.WithEnvironment($"Courier__Names__{i}", couriers[i]);
+    storefront.WithEnvironment($"Courier__Names__{i}", couriers[i]);
 
     builder.AddProject<Projects.Courier>("courier-" + i)
         .WithReference(kafka)

@@ -11,8 +11,6 @@ using Shared;
 using StoreFront;
 using StoreFront.Seed;
 
-//our collection of couriers, names are used within queues & streams as well
-string[] couriers = ["alice", "bob", "charlie"];
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +36,7 @@ builder.Services.AddOpenTelemetry().WithTracing(builder => builder.AddKafkaConsu
 // partitions we had, separate to scaling for the number of HTTP requests.
 // To make this simpler, for now, we are just running it as a background process, as we don't need to scale it
 
+var couriers = builder.Configuration.GetSection("Courier").Get<CourierSettings>()?.Names ?? [];
 foreach (var courier in couriers)
 {
     //work around the problem of multiple service registration by using a singleton explicity, see https://github.com/dotnet/runtime/issues/38751
@@ -167,3 +166,7 @@ async Task SendOrderAsync(Order order)
     await orderProducer.SendMessageAsync(queueName, new Message<Order>(order));
 }
 
+internal class CourierSettings
+{
+    public string[]? Names { get; set; }
+}
