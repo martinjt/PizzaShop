@@ -13,7 +13,7 @@ public class KafkaMessagePump<TKey, TValue>(IConsumer<TKey, TValue> consumer, st
         {
             consumer.Subscribe(topics);
             
-            while (true) 
+            while (!cancellationToken.IsCancellationRequested) 
             {
                 var consumeResult = consumer.Consume(cancellationToken);
 
@@ -22,6 +22,13 @@ public class KafkaMessagePump<TKey, TValue>(IConsumer<TKey, TValue> consumer, st
                     await Task.Delay(1000, cancellationToken);
                     continue;
                 }
+                
+                Activity.Current?.AddEvent(new ActivityEvent("KafkaMessageReceived", tags: new ActivityTagsCollection
+                {
+                    ["Topic"] = consumeResult.Topic,
+                    ["Partition"] = consumeResult.Partition.Value,
+                    ["Offset"] = consumeResult.Offset.Value
+                }));
                 
                 var success = await handler(consumeResult.Message.Key, consumeResult.Message.Value);
                 if (success)
@@ -33,9 +40,13 @@ public class KafkaMessagePump<TKey, TValue>(IConsumer<TKey, TValue> consumer, st
                 }
             }
         }
-        catch(ConsumeException e)
+        catch(KafkaException kfe)
         {
-            Debug.WriteLine(e);
+            Activity.Current?.AddEvent(new ActivityEvent("KafkaException", tags: new ActivityTagsCollection
+            {
+                ["Error"] = kfe.Error.Reason,
+                ["IsFatal"] = kfe.Error.IsFatal
+            }));    
         }
         catch (OperationCanceledException)
         {

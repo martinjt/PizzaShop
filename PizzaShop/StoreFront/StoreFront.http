@@ -9,7 +9,6 @@ POST {{StoreFront_HostAddress}}/orders
 Content-Type: application/json
 
 {
-  "createdTime": "2025-01-21T12:00:00Z",
   "deliveryAddress": {
     "name": "John Doe",
     "number": "1234",

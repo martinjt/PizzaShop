@@ -20,7 +20,7 @@ var connectionString = "DataSource=storefront;mode=memory;cache=shared";
 var keepAliveConnection = new SqliteConnection(connectionString);
 keepAliveConnection.Open();
 
-builder.Services.AddDbContext<PizzaShopDb>(opt => opt.UseSqlite(connectionString));
+builder.Services.AddDbContext<PizzaShopDb>(opt => opt.UseSqlite(connectionString), ServiceLifetime.Singleton);
 
 builder.Services.AddSingleton(
     KafkaConsumerFactory<int, string>
