@@ -1,11 +1,10 @@
 @StoreFront_HostAddress = http://localhost:5005
 
-GET {{StoreFront_HostAddress}}/orders/4/
+GET {{StoreFront_HostAddress}}/orders
 Accept: application/json
 
-###
-
 ### Send POST request with JSON body
+# @name createOrder
 POST {{StoreFront_HostAddress}}/orders
 Content-Type: application/json
 
@@ -30,3 +29,8 @@ Content-Type: application/json
     }
   ]
 }
+
+###
+
+GET {{StoreFront_HostAddress}}/orders/{{createOrder.response.body.$.orderId}}/
+Accept: application/json
