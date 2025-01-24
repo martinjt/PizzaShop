@@ -28,13 +28,13 @@ internal class OrderReadyHandler(string courierName, Channel<OrderStatus> delive
             CourierId = courierName,
             OrderId = job.OrderId,
             ETA = GetETA(DateTimeOffset.UtcNow),
-            Status = "Ready"
+            Status = DeliveryStatus.Pending
         };
         return orderStatus;
     }
 
     private DateTimeOffset GetETA(DateTimeOffset originalTime)
     {
-        return originalTime.AddMinutes(15);
+        return originalTime.AddMinutes(1);
     }
 }

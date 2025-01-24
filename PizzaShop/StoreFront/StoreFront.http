@@ -32,5 +32,5 @@ Content-Type: application/json
 
 ###
 
-GET {{StoreFront_HostAddress}}/orders/{{createOrder.response.body.$.orderId}}/
+GET {{StoreFront_HostAddress}}/orders/4/
 Accept: application/json

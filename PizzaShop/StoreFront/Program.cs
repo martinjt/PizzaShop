@@ -37,15 +37,9 @@ builder.Services.AddOpenTelemetry().WithTracing(builder => builder.AddKafkaConsu
 // To make this simpler, for now, we are just running it as a background process, as we don't need to scale it
 
 var couriers = builder.Configuration.GetSection("Courier").Get<CourierSettings>()?.Names ?? [];
-foreach (var courier in couriers)
-{
-    //work around the problem of multiple service registration by using a singleton explicity, see https://github.com/dotnet/runtime/issues/38751
-    builder.Services.AddSingleton<IHostedService, KafkaMessagePumpService<int, string>>(serviceProvider =>
-    {
-        //we want a consumer per topic, so we can track the status of each courier's orders
-        return OrderServiceFactory.Create(courier + "-order-status", serviceProvider);
-    });
-}
+var topics = couriers.Select(courier => courier + "-order-status").ToArray();
+//subscribe to all the topics with one pump
+builder.Services.AddHostedService<KafkaMessagePumpService<int, string>>(serviceProvider =>  AfterOrderServiceFactory.Create(topics, serviceProvider));
 
 builder.Services.AddOpenApi();
 
@@ -77,7 +71,7 @@ app.MapGet("/orders", async (PizzaShopDb db) =>
 
 app.MapGet("/orders/pending", async (PizzaShopDb db) =>
     {
-        return await db.Orders.Where(o => o.Status == OrderStatus.Pending)
+        return await db.Orders.Where(o => o.Status == DeliveryStatus.Pending)
                 .Include(o => o.Pizzas)
                 .ThenInclude(p => p.Toppings)
                 .ThenInclude(t => t.Topping)

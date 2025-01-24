@@ -1,15 +1,31 @@
+using System.Diagnostics;
+using Microsoft.EntityFrameworkCore;
+
 namespace StoreFront;
 
-/// <summary>
-/// Listens to status updates about an order
-/// Normally, we would tend to run a Kafka worker in a separate process, so that we could scale out to the number of
-/// partitions we had, separate to scaling for the number of HTTP requests.
-/// To make this simpler, for now, we are just running it as a background process, as we don't need to scale it
-/// </summary>
-public class AfterOrderService : BackgroundService
+internal class AfterOrderService(PizzaShopDb? db)
 {
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    public async Task<bool> HandleAsync(int key, string value)
     {
-        return Task.CompletedTask;
-    }
+        var orderId = key;
+        var orderStatus = Enum.Parse<DeliveryStatus>(value);
+        
+        Activity.Current?.AddEvent(new ActivityEvent("OrderStatusChange", tags: new ActivityTagsCollection
+        {
+            ["OrderId"] = orderId,
+            ["OrderStatus"] = orderStatus
+        }));
+        
+        if (db is null) throw new InvalidOperationException("No  EF Context");
+                                                                        
+        var orderToUpdate = await db.Orders.SingleOrDefaultAsync(o => o.OrderId == orderId);
+        if (orderToUpdate == null)
+        {
+            return false;
+        }
+
+        orderToUpdate.Status = orderStatus;
+        await db.SaveChangesAsync();
+        return true;
+    } 
 }

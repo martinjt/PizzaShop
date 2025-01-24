@@ -3,7 +3,7 @@ using Confluent.Kafka;
 
 namespace KafkaGateway;
 
-public class KafkaMessagePump<TKey, TValue>(IConsumer<TKey, TValue> consumer, string topic)
+public class KafkaMessagePump<TKey, TValue>(IConsumer<TKey, TValue> consumer, string[] topics)
 {
     public async Task RunAsync(
         Func<TKey, TValue, Task<bool>> handler, 
@@ -11,7 +11,7 @@ public class KafkaMessagePump<TKey, TValue>(IConsumer<TKey, TValue> consumer, st
     {
         try
         {
-            consumer.Subscribe(topic);
+            consumer.Subscribe(topics);
             
             while (true) 
             {

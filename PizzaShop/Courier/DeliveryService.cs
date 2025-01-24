@@ -28,7 +28,7 @@ internal class DeliveryService(string orderStatusTopic, Channel<OrderStatus> del
             {
                 if (DateTimeOffset.UtcNow > orderStatus.ETA)
                 {
-                    orderStatus.Status = "Delivered";
+                    orderStatus.Status = DeliveryStatus.Delivered;
                     await orderStatusProducer.ProduceAsync(orderStatusTopic, new Message<int, string>
                     {
                         Key = orderStatus.OrderId,
@@ -37,7 +37,7 @@ internal class DeliveryService(string orderStatusTopic, Channel<OrderStatus> del
                     break;
                 }
 
-                orderStatus.Status = "In transit";
+                orderStatus.Status = DeliveryStatus.OnTheWay;
                 await orderStatusProducer.ProduceAsync(orderStatusTopic, new Message<int, string>
                 {
                     Key = orderStatus.OrderId,

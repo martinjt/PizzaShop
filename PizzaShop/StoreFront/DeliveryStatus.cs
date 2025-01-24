@@ -1,6 +1,6 @@
 namespace StoreFront;
 
-public enum OrderStatus
+public enum DeliveryStatus
 {
     Pending,
     OnTheWay,

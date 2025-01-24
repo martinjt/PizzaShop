@@ -11,7 +11,7 @@ public static class OrderMaker
         {
             new()
             {
-                Status = OrderStatus.Delivered,
+                Status = DeliveryStatus.Delivered,
                 CreatedTime = DateTimeOffset.UtcNow,
                 DeliveryAddress = new Address
                 {
@@ -70,7 +70,7 @@ public static class OrderMaker
             },
             new()
             {
-                Status = OrderStatus.Delivered,
+                Status = DeliveryStatus.Delivered,
                 CreatedTime = DateTimeOffset.UtcNow,
                 DeliveryAddress = new Address
                 {
@@ -106,7 +106,7 @@ public static class OrderMaker
             },
             new()
             {
-                Status = OrderStatus.Delivered,
+                Status = DeliveryStatus.Delivered,
                 CreatedTime = DateTimeOffset.UtcNow,
                 DeliveryAddress = new Address
                 {
