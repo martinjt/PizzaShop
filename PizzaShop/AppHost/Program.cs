@@ -1,7 +1,11 @@
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
+using Microsoft.Extensions.Configuration;
+using PracticalOtel.OtelCollector.Aspire;
 
 var builder = DistributedApplication.CreateBuilder(args);
+
+const bool UseCollector = false;
 
 string[] couriers = ["alice", "bob", "charlie"];
 const string OrderQueueName = "store-front-order-queue";
@@ -57,4 +61,30 @@ for (int i = 0; i < couriers.Length; i++)
         .WithEnvironment("Courier__Name", couriers[i]);
 }
 
+if (UseCollector)
+{
+    var collector = builder.AddOpenTelemetryCollector("otel-collector", "./config/collector-config.yaml")
+        .WithArgs($"--config=/etc/otelcol-contrib/config.yaml")
+        .WithAppForwarding();
+
+    collector.AddConfig("./config/collector-config-receive-filters.yaml");
+
+    if (builder.Configuration.GetValue<string>("HONEYCOMB_API_KEY") is string apiKey
+        && !string.IsNullOrWhiteSpace(apiKey))
+    {
+        collector.AddConfig("./config/collector-config-with-honeycomb.yaml")
+            .WithEnvironment("HONEYCOMB_API_KEY", apiKey);
+    }
+}
+
 builder.Build().Run();
+
+public static class CollectorExtensions
+{
+    public static IResourceBuilder<CollectorResource> AddConfig(this IResourceBuilder<CollectorResource> builder, string configPath)
+    {
+        var configFileInfo = new FileInfo(configPath);
+        return builder.WithBindMount(configPath, $"/etc/otelcol-contrib/{configFileInfo.Name}")
+            .WithArgs($"--config=/etc/otelcol-contrib/{configFileInfo.Name}");
+    }
+}

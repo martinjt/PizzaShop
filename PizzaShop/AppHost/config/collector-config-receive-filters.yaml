@@ -1,0 +1,15 @@
+processors:
+  batch:
+  filter/drop_servicebus_receive_spans:
+    error_mode: ignore
+    traces:
+      span:
+        # drop the receive spans that provide no value
+        - 'attributes["messaging.operation"] == "receive" and name == "ServiceBusReceiver.Receive"'
+  
+service:
+  pipelines:
+    traces:
+      processors: 
+        - batch
+        - filter/drop_servicebus_receive_spans

@@ -1,0 +1,20 @@
+exporters:
+  otlp/honeycomb:
+    endpoint: https://api.honeycomb.io:443
+    headers:
+      x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
+  
+service:
+  pipelines:
+    traces:
+      exporters:
+        - otlp/honeycomb
+        - otlp/aspire
+    metrics:
+      exporters:
+        - otlp/honeycomb
+        - otlp/aspire
+    logs:
+      exporters:
+        - otlp/honeycomb
+        - otlp/aspire
