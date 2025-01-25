@@ -55,10 +55,17 @@ var pizzashop = builder.AddProject<Projects.PizzaShop>("pizza-shop")
     .WithEnvironment("ServiceBus__OrderQueueName", OrderQueueName)
     .WithEnvironment("ServiceBus__ConnectionString", ServiceBusConnectionString);
 
+var storeFrontWorker = builder.AddProject<Projects.StoreFrontWorker>("store-front-worker")
+    .WithReference(db)
+    .WaitFor(db)
+    .WithReference(kafka)
+    .WaitFor(kafka);
+
 for (int i = 0; i < couriers.Length; i++)
 {
     pizzashop.WithEnvironment($"Courier__Names__{i}", couriers[i]);
     storefront.WithEnvironment($"Courier__Names__{i}", couriers[i]);
+    storeFrontWorker.WithEnvironment($"Courier__Names__{i}", couriers[i]);
 
     builder.AddProject<Projects.Courier>("courier-" + i)
         .WithReference(kafka)
@@ -66,12 +73,6 @@ for (int i = 0; i < couriers.Length; i++)
         .WithEnvironment("ServiceBus__ConnectionString", ServiceBusConnectionString)
         .WithEnvironment("Courier__Name", couriers[i]);
 }
-
-var storeFrontWorker = builder.AddProject<Projects.StoreFrontWorker>("store-front-worker")
-    .WithReference(db)
-    .WaitFor(db)
-    .WithReference(kafka)
-    .WaitFor(kafka);
 
 if (UseCollector)
 {
