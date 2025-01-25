@@ -11,8 +11,7 @@ string[] couriers = ["alice", "bob", "charlie"];
 const string OrderQueueName = "store-front-order-queue";
 const string ServiceBusConnectionString = "Endpoint=sb://localhost;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;";
 
-var sql = builder.AddSqlServer("sql")
-    .WithLifetime(ContainerLifetime.Persistent);
+var sql = builder.AddSqlServer("sql");
 var db = sql.AddDatabase("pizza-shop-db");
 
 var kafka = builder.AddKafka("courier-order-status", 9092)
