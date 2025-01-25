@@ -1,9 +1,14 @@
 using System.Diagnostics;
 using Confluent.Kafka;
+using Microsoft.Extensions.Logging;
 
 namespace KafkaGateway;
 
-public class KafkaMessagePump<TKey, TValue>(IConsumer<TKey, TValue> consumer, string[] topics)
+public class KafkaMessagePump<TKey, TValue>(
+    IConsumer<TKey, TValue> consumer, 
+    ILogger<KafkaMessagePumpService<TKey, TValue>> logger,
+    string[] topics
+    )
 {
     public async Task RunAsync(
         Func<TKey, TValue, Task<bool>> handler, 
@@ -17,11 +22,14 @@ public class KafkaMessagePump<TKey, TValue>(IConsumer<TKey, TValue> consumer, st
             {
                 var consumeResult = consumer.Consume(cancellationToken);
 
-                if (consumeResult.IsPartitionEOF)
+                if (consumeResult is null || consumeResult.IsPartitionEOF)
                 {
+                    logger.LogInformation($"No Message received, yielding...");
                     await Task.Delay(1000, cancellationToken);
                     continue;
                 }
+                
+                logger.LogInformation($"Message received: {consumeResult.Message.Value}");
                 
                 Activity.Current?.AddEvent(new ActivityEvent("KafkaMessageReceived", tags: new ActivityTagsCollection
                 {
@@ -42,6 +50,7 @@ public class KafkaMessagePump<TKey, TValue>(IConsumer<TKey, TValue> consumer, st
         }
         catch(KafkaException kfe)
         {
+            logger.LogError(kfe, "Error occurred in Kafka message pump service");
             Activity.Current?.AddEvent(new ActivityEvent("KafkaException", tags: new ActivityTagsCollection
             {
                 ["Error"] = kfe.Error.Reason,

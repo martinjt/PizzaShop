@@ -7,12 +7,16 @@ namespace KafkaGateway;
 public class KafkaMessagePumpService<TKey, TValue>(
     IConsumer<TKey, TValue> consumer,
     string[] topics,
-    ILogger<KafkaMessagePump<TKey, TValue>> logger,
+    ILogger<KafkaMessagePumpService<TKey, TValue>> logger,
     Func<TKey, TValue, Task<bool>> handler) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var messagePump = new KafkaMessagePump<TKey, TValue>(consumer, topics);
+        logger.LogInformation("Starting Kafka message pump service..."); 
+        
+        var messagePump = new KafkaMessagePump<TKey, TValue>(consumer, logger, topics);
         await messagePump.RunAsync(handler, stoppingToken);
+        
+        logger.LogInformation("Exited Kafka message pump service...");  
     }
 }

@@ -12,7 +12,7 @@ internal static class AfterOrderServiceFactory
         var consumer = serviceProvider.GetRequiredService<IConsumer<int, string>>();
         if (consumer is null) throw new InvalidOperationException("No Kafka Consumer registered");
     
-        var logger = serviceProvider.GetRequiredService<ILogger<KafkaMessagePump<int, string>>>();
+        var logger = serviceProvider.GetRequiredService<ILogger<KafkaMessagePumpService<int, string>>>();
         
         var dbContextFactory = serviceProvider.GetRequiredService<IDbContextFactory<PizzaShopDb>>();
         
