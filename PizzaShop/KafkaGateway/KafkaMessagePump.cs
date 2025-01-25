@@ -49,8 +49,9 @@ public class KafkaMessagePump<TKey, TValue>(
         {
             logger.LogError(e, "Kafka Message Pump: Error consuming message");
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException ex)
         {
+            logger.LogError(ex, "Kafka message pump was cancelled");
             //Pump was cancelled, exit
         }
     }
