@@ -2,15 +2,11 @@ using System.ComponentModel;
 using System.Text.Json;
 using AsbGateway;
 using Azure.Messaging.ServiceBus;
-using Confluent.Kafka;
-using KafkaGateway;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using OpenTelemetry.Trace;
 using Shared;
-using StoreFront;
 using StoreFront.Seed;
-
+using StoreFrontCommon;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,30 +16,12 @@ var connectionString = "DataSource=storefront;mode=memory;cache=shared";
 var keepAliveConnection = new SqliteConnection(connectionString);
 keepAliveConnection.Open();
 
-builder.Services.AddDbContext<PizzaShopDb>(opt => opt.UseSqlite(connectionString), ServiceLifetime.Singleton);
-
-builder.Services.AddSingleton(
-    KafkaConsumerFactory<int, string>
-        .Create("localhost:9092", "storefront-consumer-group")
-        .AsInstrumentedConsumerBuilder());
-builder.Services.AddTransient(serviceProvider => 
-    serviceProvider.GetRequiredService<InstrumentedConsumerBuilder<int, string>>().Build());
-
-builder.Services.AddOpenTelemetry().WithTracing(builder => builder.AddKafkaConsumerInstrumentation<int, string>());
-
-// Listens to status updates about an order
-// Normally, we would tend to run a Kafka worker in a separate process, so that we could scale out to the number of
-// partitions we had, separate to scaling for the number of HTTP requests.
-// To make this simpler, for now, we are just running it as a background process, as we don't need to scale it
-
-var couriers = builder.Configuration.GetSection("Courier").Get<CourierSettings>()?.Names ?? [];
-var topics = couriers.Select(courier => courier + "-order-status").ToArray();
-//subscribe to all the topics with one pump
-builder.Services.AddHostedService<KafkaMessagePumpService<int, string>>(serviceProvider =>  AfterOrderServiceFactory.Create(topics, serviceProvider));
+builder.AddSqlServerDbContext<PizzaShopDb>(connectionName: "pizza-shop-db");
 
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
 
 var scopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
 using (var scope = scopeFactory.CreateScope())
@@ -51,8 +29,8 @@ using (var scope = scopeFactory.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<PizzaShopDb>();
     if (db.Database.EnsureCreated())
     {
-        await MenuMaker.CreateToppings(db);
-        await OrderMaker.DeliveredOrders(db);
+        //MenuMaker.CreateToppings(db);
+        //OrderMaker.DeliveredOrders(db);
     }
 }
 
@@ -106,14 +84,21 @@ app.MapPost("/orders", async ([Description("The pizza order you wish to make")]O
     //we already have the toppings, so we must attach them to the order
     foreach (var pizza in order.Pizzas)
     {
-        foreach (var topping in pizza.Toppings)
+        for (int i = 0; i < pizza.Toppings.Count; i++)
         {
-            topping.ToppingId = topping.Topping?.ToppingId ?? 0;
-            topping.Topping = null;
+            var pizzaTopping = pizza.Toppings[i];
+            if (pizzaTopping.Topping is not null)
+            {
+                var existingTopping = await db.Toppings.SingleOrDefaultAsync(t => t.ToppingId == pizzaTopping.Topping.ToppingId);
+                if (existingTopping != null)
+                {
+                    pizza.Toppings[i] = new PizzaTopping { Topping = existingTopping };
+                }
+            }
         }
     }
     
-    db.Orders.Attach(order);
+    db.Orders.Add(order);
     
     //really we should use an Outbox pattern here, to save the outgoing message, but for now we will just save the order
     await db.SaveChangesAsync();
@@ -145,22 +130,18 @@ await app.RunAsync();
 
 async Task SendOrderAsync(Order order)
 {
-    var connectionString = app.Configuration.GetValue<string>("ServiceBus:ConnectionString");
+    var sbConnectionString = app.Configuration.GetValue<string>("ServiceBus:ConnectionString");
     var queueName = app.Configuration.GetValue<string>("ServiceBus:OrderQueueName");
             
-    if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(queueName))
+    if (string.IsNullOrEmpty(sbConnectionString) || string.IsNullOrEmpty(queueName))
     {
         throw new InvalidOperationException("ServiceBus:ConnectionString and ServiceBus:OrderQueueName must be set in configuration");
     }
             
-    var client = new ServiceBusClient(connectionString);
+    var client = new ServiceBusClient(sbConnectionString);
     var orderProducer = new AsbProducer<Order>(
         client, 
         message => new ServiceBusMessage(JsonSerializer.Serialize(message.Content)));
     await orderProducer.SendMessageAsync(queueName, new Message<Order>(order));
 }
 
-internal class CourierSettings
-{
-    public string[]? Names { get; set; }
-}

@@ -1,4 +1,4 @@
-namespace StoreFront;
+namespace StoreFrontCommon;
 
 public enum PizzaSize
 {

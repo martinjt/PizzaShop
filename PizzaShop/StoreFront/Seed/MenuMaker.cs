@@ -1,3 +1,5 @@
+using StoreFrontCommon;
+
 namespace StoreFront.Seed;
 
 /// <summary>
@@ -5,7 +7,7 @@ namespace StoreFront.Seed;
 /// </summary>
 public static class MenuMaker
 {
-        public static async Task CreateToppings(PizzaShopDb db)
+        public static void CreateToppings(PizzaShopDb db)
         {
                 var toppings = new Topping[]
                 {
@@ -143,7 +145,7 @@ public static class MenuMaker
                         },
                 };
                 
-                await db.Toppings.AddRangeAsync(toppings);
-                await db.SaveChangesAsync();
+                db.Toppings.AddRange(toppings);
+                db.SaveChanges();
         }
 }

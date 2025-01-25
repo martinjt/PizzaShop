@@ -1,4 +1,4 @@
-﻿namespace StoreFront;
+﻿namespace StoreFrontCommon;
 
 /// <summary>
 /// The location for a courier pickup or delivery
@@ -9,7 +9,7 @@ public class Address
 		
     public string Name { get; set; } = string.Empty;
 
-    public string Number { get; set; } = string.Empty;
+    public string HouseNumer { get; set; } = string.Empty;
     
     public int OrderId { get; set; }
 

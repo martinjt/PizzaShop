@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace StoreFront;
+namespace StoreFrontCommon;
 
 /// <summary>
 /// A topping that can be added to a pizza

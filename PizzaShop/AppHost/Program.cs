@@ -11,6 +11,9 @@ string[] couriers = ["alice", "bob", "charlie"];
 const string OrderQueueName = "store-front-order-queue";
 const string ServiceBusConnectionString = "Endpoint=sb://localhost;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;";
 
+var sql = builder.AddSqlServer("sql");
+var db = sql.AddDatabase("pizza-shop-db");
+
 var kafka = builder.AddKafka("courier-order-status", 9092)
     .WithKafkaUI();
 
@@ -42,8 +45,8 @@ builder.Eventing.Subscribe<ResourceReadyEvent>(kafka.Resource, async (@event, ct
 });
 
 var storefront = builder.AddProject<Projects.StoreFront>("store-front")
-    .WithReference(kafka)
-    .WaitFor(kafka)
+    .WithReference(db)
+    .WaitFor(db)
     .WithEnvironment("ServiceBus__OrderQueueName", OrderQueueName)
     .WithEnvironment("ServiceBus__ConnectionString", ServiceBusConnectionString);
 
@@ -51,10 +54,17 @@ var pizzashop = builder.AddProject<Projects.PizzaShop>("pizza-shop")
     .WithEnvironment("ServiceBus__OrderQueueName", OrderQueueName)
     .WithEnvironment("ServiceBus__ConnectionString", ServiceBusConnectionString);
 
+var storeFrontWorker = builder.AddProject<Projects.StoreFrontWorker>("store-front-worker")
+    .WithReference(db)
+    .WaitFor(db)
+    .WithReference(kafka)
+    .WaitFor(kafka);
+
 for (int i = 0; i < couriers.Length; i++)
 {
     pizzashop.WithEnvironment($"Courier__Names__{i}", couriers[i]);
     storefront.WithEnvironment($"Courier__Names__{i}", couriers[i]);
+    storeFrontWorker.WithEnvironment($"Courier__Names__{i}", couriers[i]);
 
     builder.AddProject<Projects.Courier>("courier-" + i)
         .WithReference(kafka)

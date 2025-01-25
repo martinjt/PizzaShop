@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using Confluent.Kafka;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -6,20 +7,23 @@ namespace KafkaGateway;
 
 public class KafkaMessagePumpService<TKey, TValue>(
     IConsumer<TKey, TValue> consumer,
-    string[] topics,
-    ILogger<KafkaMessagePump<TKey, TValue>> logger,
-    Func<TKey, TValue, Task<bool>> handler) : BackgroundService
+    IEnumerable<string> topics,
+    ILogger<KafkaMessagePumpService<int, string>> logger, 
+    Func<TKey, TValue,  bool> handler) : IHostedService
 {
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    private readonly Channel<bool> _stop = Channel.CreateBounded<bool>(1);
+
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
-        try {
-            var messagePump = new KafkaMessagePump<TKey, TValue>(consumer, topics, logger);
-            return Task.Run(() => messagePump.RunAsync(handler, stoppingToken), stoppingToken);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error starting the MessagePump");
-            throw;
-        }
+        var messagePump = new KafkaMessagePump<TKey, TValue>(consumer, topics, logger, _stop);
+        
+        //Kafka consumer is blocking, so we run it on a background thread. We use the channel to signal stopping
+        //because the consumer does not understand cancellation tokens
+        await Task.Run(() => messagePump.Run(handler), cancellationToken); 
+    }
+
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        await _stop.Writer.WriteAsync(true, cancellationToken);
     }
 }

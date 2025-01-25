@@ -1,3 +1,5 @@
+using StoreFrontCommon;
+
 namespace StoreFront.Seed;
 
 /// <summary>
@@ -5,7 +7,7 @@ namespace StoreFront.Seed;
 /// </summary>
 public static class OrderMaker
 {
-    public static async Task DeliveredOrders(PizzaShopDb db)
+    public static void DeliveredOrders(PizzaShopDb db)
     {
         var orders = new Order[]
         {
@@ -15,7 +17,7 @@ public static class OrderMaker
                 CreatedTime = DateTimeOffset.UtcNow,
                 DeliveryAddress = new Address
                 {
-                    Number = "123",
+                    HouseNumer = "123",
                     City = "Exeter",
                     PostalCode = "EX2 5LG",
                 },
@@ -74,7 +76,7 @@ public static class OrderMaker
                 CreatedTime = DateTimeOffset.UtcNow,
                 DeliveryAddress = new Address
                 {
-                    Number = "456",
+                    HouseNumer = "456",
                     City = "Altrincham",
                     PostalCode = "WA15 9AH",
                 },
@@ -110,7 +112,7 @@ public static class OrderMaker
                 CreatedTime = DateTimeOffset.UtcNow,
                 DeliveryAddress = new Address
                 {
-                    Number = "789",
+                    HouseNumer = "789",
                     City = "Huddersfield",
                     PostalCode = "HD2 2QH",
                 },
@@ -142,7 +144,7 @@ public static class OrderMaker
             },
         };
         
-        await db.Orders.AddRangeAsync(orders);
-        await db.SaveChangesAsync();
+        db.Orders.AddRange(orders);
+        db.SaveChanges();
     }
 }

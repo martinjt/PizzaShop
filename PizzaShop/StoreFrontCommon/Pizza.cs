@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel;
-using StoreFront.Seed;
 
-namespace StoreFront;
+namespace StoreFrontCommon;
 
 /// <summary>
 /// A pizza in an order. A pizza has a size and toppings
@@ -13,6 +12,7 @@ public class Pizza
     public int OrderId { get; set; }
     [Description("How large should this pizza be, in inches?")]
     public PizzaSize Size { get; set; }
+
     [Description("What toppings should be on this pizza?")]
-    public List<PizzaTopping> Toppings { get; init; } = new();
+    public List<PizzaTopping> Toppings { get; set; } = new();
 }

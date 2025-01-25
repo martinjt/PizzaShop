@@ -1,49 +1,53 @@
 using System.Diagnostics;
+using System.Threading.Channels;
 using Confluent.Kafka;
 using Microsoft.Extensions.Logging;
 
 namespace KafkaGateway;
 
-public class KafkaMessagePump<TKey, TValue>(IConsumer<TKey, TValue> consumer, string[] topics, ILogger<KafkaMessagePump<TKey, TValue>> logger)
+public class KafkaMessagePump<TKey, TValue>(
+    IConsumer<TKey, TValue> consumer, 
+    IEnumerable<string> topics, 
+    ILogger<KafkaMessagePumpService<int, string>> logger,
+    Channel<bool> stop)
 {
-    public async Task RunAsync(
-        Func<TKey, TValue, Task<bool>> handler, 
-        CancellationToken cancellationToken = default)
+    public void Run(Func<TKey, TValue,  bool> handler)
     {
         try
         {
             consumer.Subscribe(topics);
             
-            while (!cancellationToken.IsCancellationRequested) 
+            while (true)
             {
-                var consumeResult = consumer.Consume(cancellationToken);
+                //end was signalled
+                if (stop.Reader.TryRead(out _))
+                    break;
+                
+                var consumeResult = consumer.Consume(TimeSpan.FromMilliseconds(100));
 
-                if (consumeResult.IsPartitionEOF)
+                if (consumeResult is null || consumeResult.IsPartitionEOF)
                 {
-                    await Task.Delay(1000, cancellationToken);
+                    logger.LogInformation("Kafka Message Pump: No message received. Waiting for 1 second.");
+                    Task.Delay(1000).Wait();
                     continue;
                 }
                 
-                Activity.Current?.AddEvent(new ActivityEvent("KafkaMessageReceived", tags: new ActivityTagsCollection
-                {
-                    ["Topic"] = consumeResult.Topic,
-                    ["Partition"] = consumeResult.Partition.Value,
-                    ["Offset"] = consumeResult.Offset.Value
-                }));
+                logger.LogInformation($"Kafka Message Pump: Consumed message '{consumeResult.Message.Value}' at: '{consumeResult.TopicPartitionOffset}'.");
                 
-                var success = await handler(consumeResult.Message.Key, consumeResult.Message.Value);
+                var success = handler(consumeResult.Message.Key, consumeResult.Message.Value);
                 if (success)
                 {
                     //We don't want to commit unless we have successfully handled the message
                     //Commit directly. Normally we would want to batch these up, but for the demo we will
                     //commit after each message
                     consumer.Commit(consumeResult);
+                    logger.LogInformation($"Kafka Message Pump: Committed message '{consumeResult.Message.Value}' at: '{consumeResult.TopicPartitionOffset}'.");
                 }
             }
         }
-        catch(KafkaException kfe)
+        catch(KafkaException e)
         {
-            logger.LogError(kfe, "Kafka Exception");
+            logger.LogError(e, "Kafka Message Pump: Error consuming message");
         }
         catch (OperationCanceledException ex)
         {
@@ -51,4 +55,4 @@ public class KafkaMessagePump<TKey, TValue>(IConsumer<TKey, TValue> consumer, st
             //Pump was cancelled, exit
         }
     }
-} 
+}

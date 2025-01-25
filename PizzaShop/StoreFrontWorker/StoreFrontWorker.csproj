@@ -1,27 +1,20 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Worker">
 
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
+        <UserSecretsId>dotnet-StoreFrontWorker-f01e9233-2af0-45a2-b69e-1835d06efea2</UserSecretsId>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Aspire.Azure.Messaging.ServiceBus" Version="9.0.0" />
-        <PackageReference Include="Aspire.Confluent.Kafka" Version="9.0.0" />
         <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0" />
-        <PackageReference Include="Confluent.Kafka" Version="2.8.0" />
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.1" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.1" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\AsbGateway\AsbGateway.csproj" />
       <ProjectReference Include="..\KafkaGateway\KafkaGateway.csproj" />
       <ProjectReference Include="..\Shared\Shared.csproj" />
       <ProjectReference Include="..\StoreFrontCommon\StoreFrontCommon.csproj" />
     </ItemGroup>
-
 </Project>

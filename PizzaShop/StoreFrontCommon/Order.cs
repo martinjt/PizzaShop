@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace StoreFront;
+namespace StoreFrontCommon;
 
 /// <summary>
 /// An order for our pizza shop
@@ -12,7 +12,7 @@ public class Order
     [Description("What time was the order placed?")]
     public DateTimeOffset CreatedTime { get; set; }
     [Description("Where do you want this delivered?")]
-    public Address DeliveryAddress { get; set; }
+    public Address? DeliveryAddress { get; set; }
     [Description("What pizzas do you want?")]
     public ICollection<Pizza> Pizzas { get; set; } 
     [Description("What is the status of this order?")]
