@@ -22,16 +22,18 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
+/*
 var scopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
 using (var scope = scopeFactory.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<PizzaShopDb>();
     if (db.Database.EnsureCreated())
     {
-        await MenuMaker.CreateToppings(db);
-        await OrderMaker.DeliveredOrders(db);
+        MenuMaker.CreateToppings(db);
+        OrderMaker.DeliveredOrders(db);
     }
 }
+*/
 
 app.MapOpenApi();
 

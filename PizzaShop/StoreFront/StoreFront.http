@@ -11,7 +11,7 @@ Content-Type: application/json
 {
   "deliveryAddress": {
     "name": "John Doe",
-    "number": "1234",
+    "housenumber": "1234",
     "city": "London",
     "postalCode": "W12 0TZ"
   },

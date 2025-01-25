@@ -14,5 +14,5 @@ public class Pizza
     public PizzaSize Size { get; set; }
 
     [Description("What toppings should be on this pizza?")]
-    public List<PizzaTopping>? Toppings { get; set; } = new();
+    public List<PizzaTopping> Toppings { get; set; } = new();
 }
