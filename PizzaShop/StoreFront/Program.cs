@@ -2,16 +2,11 @@ using System.ComponentModel;
 using System.Text.Json;
 using AsbGateway;
 using Azure.Messaging.ServiceBus;
-using Confluent.Kafka;
-using KafkaGateway;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using OpenTelemetry.Trace;
 using Shared;
-using StoreFront;
 using StoreFront.Seed;
 using StoreFrontCommon;
-
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,16 +16,7 @@ var connectionString = "DataSource=storefront;mode=memory;cache=shared";
 var keepAliveConnection = new SqliteConnection(connectionString);
 keepAliveConnection.Open();
 
-builder.Services.AddDbContext<PizzaShopDb>(opt => opt.UseSqlite(connectionString), ServiceLifetime.Singleton);
-
-builder.Services.AddSingleton(
-    KafkaConsumerFactory<int, string>
-        .Create("localhost:9092", "storefront-consumer-group")
-        .AsInstrumentedConsumerBuilder());
-builder.Services.AddTransient(serviceProvider => 
-    serviceProvider.GetRequiredService<InstrumentedConsumerBuilder<int, string>>().Build());
-
-builder.Services.AddOpenTelemetry().WithTracing(builder => builder.AddKafkaConsumerInstrumentation<int, string>());
+builder.AddSqlServerDbContext<PizzaShopDb>(connectionName: "pizza-shop-db");
 
 builder.Services.AddOpenApi();
 
@@ -95,16 +81,22 @@ app.MapPost("/orders", async ([Description("The pizza order you wish to make")]O
     order.CreatedTime = DateTimeOffset.UtcNow;
     
     //we already have the toppings, so we must attach them to the order
+
+
     foreach (var pizza in order.Pizzas)
     {
-        foreach (var topping in pizza.Toppings)
+        for (int i = 0; i < pizza.Toppings.Count; i++)
         {
-            topping.ToppingId = topping.Topping?.ToppingId ?? 0;
-            topping.Topping = null;
+            var pizzaTopping = pizza.Toppings[i];
+            var existingTopping = await db.Toppings.SingleOrDefaultAsync(t => t.ToppingId == pizzaTopping.Topping.ToppingId);
+            if (existingTopping != null)
+            {
+                pizza.Toppings[i] = new PizzaTopping { Topping = existingTopping };
+            }
         }
     }
     
-    db.Orders.Attach(order);
+    db.Orders.Add(order);
     
     //really we should use an Outbox pattern here, to save the outgoing message, but for now we will just save the order
     await db.SaveChangesAsync();

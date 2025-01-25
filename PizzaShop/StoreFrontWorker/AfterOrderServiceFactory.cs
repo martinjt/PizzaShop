@@ -1,5 +1,6 @@
 using Confluent.Kafka;
 using KafkaGateway;
+using Microsoft.EntityFrameworkCore;
 using StoreFrontCommon;
 
 namespace StoreFrontWorker;
@@ -12,12 +13,13 @@ internal static class AfterOrderServiceFactory
         if (consumer is null) throw new InvalidOperationException("No Kafka Consumer registered");
     
         var logger = serviceProvider.GetRequiredService<ILogger<KafkaMessagePump<int, string>>>();
-        var db = serviceProvider.GetService<PizzaShopDb>();
+        
+        var dbContextFactory = serviceProvider.GetRequiredService<IDbContextFactory<PizzaShopDb>>();
         
         return new KafkaMessagePumpService<int, string>(
             consumer, 
             topics, 
             logger,
-            (key, value) => new AfterOrderService(db).HandleAsync(new OrderStatusChange(key, value)));
+            (key, value) => new AfterOrderService(dbContextFactory).HandleAsync(new OrderStatusChange(key, value)));
     }
 }

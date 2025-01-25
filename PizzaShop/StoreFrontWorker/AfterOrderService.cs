@@ -5,7 +5,7 @@ using StoreFrontCommon;
 
 namespace StoreFrontWorker;
 
-internal class AfterOrderService(PizzaShopDb? db)
+internal class AfterOrderService(IDbContextFactory<PizzaShopDb> dbContextFactory)
 {
     public async Task<bool> HandleAsync(OrderStatusChange orderStatusChange)
     {
@@ -17,7 +17,9 @@ internal class AfterOrderService(PizzaShopDb? db)
             ["OrderStatus"] = orderStatusChange.NewStatus
         }));
         
-        if (db is null) throw new InvalidOperationException("No  EF Context");
+        if (dbContextFactory is null) throw new InvalidOperationException("No  EF Context Factory registered");
+
+        await using var db = await dbContextFactory.CreateDbContextAsync() ;
                                                                         
         var orderToUpdate = await db.Orders.SingleOrDefaultAsync(o => o.OrderId == orderStatusChange.OrderId);
         if (orderToUpdate == null)
