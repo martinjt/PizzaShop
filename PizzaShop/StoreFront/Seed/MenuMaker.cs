@@ -1,3 +1,5 @@
+using StoreFrontCommon;
+
 namespace StoreFront.Seed;
 
 /// <summary>

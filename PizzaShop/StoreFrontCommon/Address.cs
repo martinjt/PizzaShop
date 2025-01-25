@@ -1,4 +1,4 @@
-﻿namespace StoreFront;
+﻿namespace StoreFrontCommon;
 
 /// <summary>
 /// The location for a courier pickup or delivery

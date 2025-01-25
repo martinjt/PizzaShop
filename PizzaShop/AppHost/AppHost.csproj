@@ -21,6 +21,7 @@
     <ItemGroup>
       <ProjectReference Include="..\Courier\Courier.csproj" />
       <ProjectReference Include="..\PizzaShop\PizzaShop.csproj" />
+      <ProjectReference Include="..\StoreFrontWorker\StoreFrontWorker.csproj" />
       <ProjectReference Include="..\StoreFront\StoreFront.csproj" />
     </ItemGroup>
 

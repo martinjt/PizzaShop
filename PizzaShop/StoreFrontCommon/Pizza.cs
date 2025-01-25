@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel;
-using StoreFront.Seed;
 
-namespace StoreFront;
+namespace StoreFrontCommon;
 
 /// <summary>
 /// A pizza in an order. A pizza has a size and toppings

@@ -20,6 +20,7 @@
       <ProjectReference Include="..\AsbGateway\AsbGateway.csproj" />
       <ProjectReference Include="..\KafkaGateway\KafkaGateway.csproj" />
       <ProjectReference Include="..\Shared\Shared.csproj" />
+      <ProjectReference Include="..\StoreFrontCommon\StoreFrontCommon.csproj" />
     </ItemGroup>
 
 </Project>

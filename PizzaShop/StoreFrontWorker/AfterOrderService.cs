@@ -1,31 +1,30 @@
 using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
+using Shared;
+using StoreFrontCommon;
 
-namespace StoreFront;
+namespace StoreFrontWorker;
 
 internal class AfterOrderService(PizzaShopDb? db)
 {
-    public async Task<bool> HandleAsync(int key, string value)
+    public async Task<bool> HandleAsync(OrderStatusChange orderStatusChange)
     {
-        var orderId = key;
-        var orderStatus = Enum.Parse<DeliveryStatus>(value);
+        orderStatusChange.AddCurrentTraceContext();
         
         Activity.Current?.AddEvent(new ActivityEvent("OrderStatusChange", tags: new ActivityTagsCollection
         {
-            ["OrderId"] = orderId,
-            ["OrderStatus"] = orderStatus
+            ["OrderId"] = orderStatusChange.OrderId,
+            ["OrderStatus"] = orderStatusChange.NewStatus
         }));
         
         if (db is null) throw new InvalidOperationException("No  EF Context");
                                                                         
-        var orderToUpdate = await db.Orders.SingleOrDefaultAsync(o => o.OrderId == orderId);
+        var orderToUpdate = await db.Orders.SingleOrDefaultAsync(o => o.OrderId == orderStatusChange.OrderId);
         if (orderToUpdate == null)
-        {
             return false;
-        }
 
-        orderToUpdate.Status = orderStatus;
+        orderToUpdate.Status = orderStatusChange.NewStatus;
         await db.SaveChangesAsync();
         return true;
-    } 
+    }
 }

@@ -1,4 +1,4 @@
-﻿namespace StoreFront;
+﻿namespace StoreFrontCommon;
 
 /// <summary>
 /// A topping added to a pizza (many-to-many)

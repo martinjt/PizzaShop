@@ -1,8 +1,8 @@
 using Confluent.Kafka;
 using KafkaGateway;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using StoreFrontCommon;
 
-namespace StoreFront;
+namespace StoreFrontWorker;
 
 internal static class AfterOrderServiceFactory
 {
@@ -18,6 +18,6 @@ internal static class AfterOrderServiceFactory
             consumer, 
             topics, 
             logger,
-            (key, value) => new AfterOrderService(db).HandleAsync(key, value));
+            (key, value) => new AfterOrderService(db).HandleAsync(new OrderStatusChange(key, value)));
     }
 }

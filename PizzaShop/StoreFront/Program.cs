@@ -10,6 +10,7 @@ using OpenTelemetry.Trace;
 using Shared;
 using StoreFront;
 using StoreFront.Seed;
+using StoreFrontCommon;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,16 +31,6 @@ builder.Services.AddTransient(serviceProvider =>
     serviceProvider.GetRequiredService<InstrumentedConsumerBuilder<int, string>>().Build());
 
 builder.Services.AddOpenTelemetry().WithTracing(builder => builder.AddKafkaConsumerInstrumentation<int, string>());
-
-// Listens to status updates about an order
-// Normally, we would tend to run a Kafka worker in a separate process, so that we could scale out to the number of
-// partitions we had, separate to scaling for the number of HTTP requests.
-// To make this simpler, for now, we are just running it as a background process, as we don't need to scale it
-
-var couriers = builder.Configuration.GetSection("Courier").Get<CourierSettings>()?.Names ?? [];
-var topics = couriers.Select(courier => courier + "-order-status").ToArray();
-//subscribe to all the topics with one pump
-builder.Services.AddHostedService<KafkaMessagePumpService<int, string>>(serviceProvider =>  AfterOrderServiceFactory.Create(topics, serviceProvider));
 
 builder.Services.AddOpenApi();
 
@@ -160,7 +151,3 @@ async Task SendOrderAsync(Order order)
     await orderProducer.SendMessageAsync(queueName, new Message<Order>(order));
 }
 
-internal class CourierSettings
-{
-    public string[]? Names { get; set; }
-}

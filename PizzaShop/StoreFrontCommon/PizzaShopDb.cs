@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace StoreFront;
+namespace StoreFrontCommon;
 
 public class PizzaShopDb(DbContextOptions<PizzaShopDb> options) : DbContext(options)
 {

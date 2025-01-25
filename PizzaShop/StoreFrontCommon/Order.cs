@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace StoreFront;
+namespace StoreFrontCommon;
 
 /// <summary>
 /// An order for our pizza shop

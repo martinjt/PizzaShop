@@ -61,6 +61,9 @@ for (int i = 0; i < couriers.Length; i++)
         .WithEnvironment("Courier__Name", couriers[i]);
 }
 
+var storeFrontWorker = builder.AddProject<Projects.StoreFrontWorker>("store-front-worker")
+    .WithReference(kafka);
+
 if (UseCollector)
 {
     var collector = builder.AddOpenTelemetryCollector("otel-collector", "./config/collector-config.yaml")
