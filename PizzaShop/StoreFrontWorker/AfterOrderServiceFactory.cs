@@ -20,6 +20,6 @@ internal static class AfterOrderServiceFactory
             consumer, 
             topics, 
             logger,
-            (key, value) => new AfterOrderService(dbContextFactory).HandleAsync(new OrderStatusChange(key, value)));
+            (key, value) => new AfterOrderService(dbContextFactory).Handle(new OrderStatusChange(key, value)));
     }
 }
