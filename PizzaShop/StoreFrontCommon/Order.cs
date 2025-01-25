@@ -14,7 +14,7 @@ public class Order
     [Description("Where do you want this delivered?")]
     public Address? DeliveryAddress { get; set; }
     [Description("What pizzas do you want?")]
-    public ICollection<Pizza> Pizzas { get; set; } 
+    public ICollection<Pizza> Pizzas { get; set; } = new List<Pizza>();
     [Description("What is the status of this order?")]
     public DeliveryStatus Status { get; set; } = DeliveryStatus.Pending;
 }
