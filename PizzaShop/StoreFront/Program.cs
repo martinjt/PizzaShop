@@ -81,17 +81,18 @@ app.MapPost("/orders", async ([Description("The pizza order you wish to make")]O
     order.CreatedTime = DateTimeOffset.UtcNow;
     
     //we already have the toppings, so we must attach them to the order
-
-
     foreach (var pizza in order.Pizzas)
     {
         for (int i = 0; i < pizza.Toppings.Count; i++)
         {
             var pizzaTopping = pizza.Toppings[i];
-            var existingTopping = await db.Toppings.SingleOrDefaultAsync(t => t.ToppingId == pizzaTopping.Topping.ToppingId);
-            if (existingTopping != null)
+            if (pizzaTopping.Topping is not null)
             {
-                pizza.Toppings[i] = new PizzaTopping { Topping = existingTopping };
+                var existingTopping = await db.Toppings.SingleOrDefaultAsync(t => t.ToppingId == pizzaTopping.Topping.ToppingId);
+                if (existingTopping != null)
+                {
+                    pizza.Toppings[i] = new PizzaTopping { Topping = existingTopping };
+                }
             }
         }
     }
@@ -128,15 +129,15 @@ await app.RunAsync();
 
 async Task SendOrderAsync(Order order)
 {
-    var connectionString = app.Configuration.GetValue<string>("ServiceBus:ConnectionString");
+    var sbConnectionString = app.Configuration.GetValue<string>("ServiceBus:ConnectionString");
     var queueName = app.Configuration.GetValue<string>("ServiceBus:OrderQueueName");
             
-    if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(queueName))
+    if (string.IsNullOrEmpty(sbConnectionString) || string.IsNullOrEmpty(queueName))
     {
         throw new InvalidOperationException("ServiceBus:ConnectionString and ServiceBus:OrderQueueName must be set in configuration");
     }
             
-    var client = new ServiceBusClient(connectionString);
+    var client = new ServiceBusClient(sbConnectionString);
     var orderProducer = new AsbProducer<Order>(
         client, 
         message => new ServiceBusMessage(JsonSerializer.Serialize(message.Content)));

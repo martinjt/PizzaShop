@@ -9,9 +9,11 @@ public class PizzaShopDb(DbContextOptions<PizzaShopDb> options) : DbContext(opti
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Topping>()
-            .Property(t => t.Price)
-            .HasColumnType("decimal(18,2)");
+        modelBuilder.Entity<PizzaTopping>().HasKey(pst => new { pst.PizzaId, pst.ToppingId });
+        modelBuilder.Entity<PizzaTopping>().HasOne<Pizza>().WithMany(ps => ps.Toppings);
+        modelBuilder.Entity<PizzaTopping>().HasOne(pst => pst.Topping).WithMany();
+
+        modelBuilder.Entity<Order>().OwnsOne(o => o.DeliveryAddress);
 
         base.OnModelCreating(modelBuilder);
     }
