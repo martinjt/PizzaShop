@@ -1,9 +1,10 @@
 using System.Diagnostics;
 using Confluent.Kafka;
+using Microsoft.Extensions.Logging;
 
 namespace KafkaGateway;
 
-public class KafkaMessagePump<TKey, TValue>(IConsumer<TKey, TValue> consumer, string[] topics)
+public class KafkaMessagePump<TKey, TValue>(IConsumer<TKey, TValue> consumer, string[] topics, ILogger<KafkaMessagePump<TKey, TValue>> logger)
 {
     public async Task RunAsync(
         Func<TKey, TValue, Task<bool>> handler, 
@@ -42,14 +43,11 @@ public class KafkaMessagePump<TKey, TValue>(IConsumer<TKey, TValue> consumer, st
         }
         catch(KafkaException kfe)
         {
-            Activity.Current?.AddEvent(new ActivityEvent("KafkaException", tags: new ActivityTagsCollection
-            {
-                ["Error"] = kfe.Error.Reason,
-                ["IsFatal"] = kfe.Error.IsFatal
-            }));    
+            logger.LogError(kfe, "Kafka Exception");
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException ex)
         {
+            logger.LogError(ex, "Kafka message pump was cancelled");
             //Pump was cancelled, exit
         }
     }

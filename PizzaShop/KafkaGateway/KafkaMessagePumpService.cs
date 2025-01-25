@@ -10,9 +10,16 @@ public class KafkaMessagePumpService<TKey, TValue>(
     ILogger<KafkaMessagePump<TKey, TValue>> logger,
     Func<TKey, TValue, Task<bool>> handler) : BackgroundService
 {
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var messagePump = new KafkaMessagePump<TKey, TValue>(consumer, topics);
-        await messagePump.RunAsync(handler, stoppingToken);
+        try {
+            var messagePump = new KafkaMessagePump<TKey, TValue>(consumer, topics, logger);
+            return Task.Run(() => messagePump.RunAsync(handler, stoppingToken), stoppingToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error starting the MessagePump");
+            throw;
+        }
     }
 }

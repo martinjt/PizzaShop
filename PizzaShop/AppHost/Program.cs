@@ -43,6 +43,7 @@ builder.Eventing.Subscribe<ResourceReadyEvent>(kafka.Resource, async (@event, ct
 
 var storefront = builder.AddProject<Projects.StoreFront>("store-front")
     .WithReference(kafka)
+    .WaitFor(kafka)
     .WithEnvironment("ServiceBus__OrderQueueName", OrderQueueName)
     .WithEnvironment("ServiceBus__ConnectionString", ServiceBusConnectionString);
 
@@ -57,6 +58,7 @@ for (int i = 0; i < couriers.Length; i++)
 
     builder.AddProject<Projects.Courier>("courier-" + i)
         .WithReference(kafka)
+        .WaitFor(kafka)
         .WithEnvironment("ServiceBus__ConnectionString", ServiceBusConnectionString)
         .WithEnvironment("Courier__Name", couriers[i]);
 }
