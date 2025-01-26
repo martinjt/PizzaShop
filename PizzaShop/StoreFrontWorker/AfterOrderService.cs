@@ -9,7 +9,7 @@ internal class AfterOrderService(IDbContextFactory<PizzaShopDb> dbContextFactory
 {
     public bool Handle(OrderStatusChange orderStatusChange)
     {
-        orderStatusChange.AddCurrentTraceContext();
+        using var activity = orderStatusChange.SetCurrentTraceContext();
         
         if (dbContextFactory is null) throw new InvalidOperationException("No  EF Context Factory registered");
 
