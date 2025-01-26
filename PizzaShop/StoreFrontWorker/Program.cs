@@ -33,7 +33,7 @@ var couriers = builder.Configuration.GetSection("Courier").Get<CourierSettings>(
 var topics = couriers.Select(courier => courier + "-order-status").ToArray();
 
 //subscribe to all the topics with one pump
-builder.Services.AddHostedService<KafkaMessagePumpService<int, string>>(serviceProvider =>  AfterOrderServiceFactory.Create(topics, serviceProvider));
+builder.Services.AddHostedService<KafkaMessagePumpService<int, string, OrderStatusChange>>(serviceProvider =>  AfterOrderServiceFactory.Create(topics, serviceProvider));
 
 var host = builder.Build();
 host.Run();

@@ -5,13 +5,13 @@ using Microsoft.Extensions.Logging;
 
 namespace KafkaGateway;
 
-public class KafkaMessagePump<TKey, TValue>(
+public class KafkaMessagePump<TKey, TValue, TRequest>(
     IConsumer<TKey, TValue> consumer, 
     IEnumerable<string> topics, 
-    ILogger<KafkaMessagePumpService<int, string>> logger,
+    ILogger<KafkaMessagePumpService<TKey, TValue, TRequest>> logger,
     Channel<bool> stop)
 {
-    public void Run(Func<TKey, TValue,  bool> handler)
+    public void Run(Func<TValue, TRequest> mapper, Func<TRequest, bool> handler)
     {
         try
         {
@@ -34,7 +34,8 @@ public class KafkaMessagePump<TKey, TValue>(
                 
                 logger.LogInformation($"Kafka Message Pump: Consumed message '{consumeResult.Message.Value}' at: '{consumeResult.TopicPartitionOffset}'.");
                 
-                var success = handler(consumeResult.Message.Key, consumeResult.Message.Value);
+                var request = mapper(consumeResult.Message.Value);
+                var success = handler(request);
                 if (success)
                 {
                     //We don't want to commit unless we have successfully handled the message

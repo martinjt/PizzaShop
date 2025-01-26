@@ -3,8 +3,10 @@ using StoreFrontCommon;
 
 namespace StoreFrontWorker;
 
-public class OrderStatusChange(int orderId, string newStatus) : TraceableRequest
+public class OrderStatusChange() : TraceableRequest
 {
-    public DeliveryStatus NewStatus { get; set; } = Enum.Parse<DeliveryStatus>(newStatus);
-    public int OrderId { get; set; } = orderId;
+    public string? CourierId { get; set; }
+    public int OrderId { get; set; }
+    public DateTimeOffset ETA { get; set; }
+    public DeliveryStatus Status { get; set; } = DeliveryStatus.Pending;
 }

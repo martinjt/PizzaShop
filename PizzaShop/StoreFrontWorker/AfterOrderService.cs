@@ -19,7 +19,7 @@ internal class AfterOrderService(IDbContextFactory<PizzaShopDb> dbContextFactory
         if (orderToUpdate == null)
             return false ;
 
-        orderToUpdate.Status = orderStatusChange.NewStatus;
+        orderToUpdate.Status = orderStatusChange.Status;
         db.SaveChanges();
         return true;
     }
