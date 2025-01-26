@@ -5,7 +5,6 @@ using Azure.Messaging.ServiceBus;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Shared;
-using StoreFront.Seed;
 using StoreFrontCommon;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,11 +26,7 @@ var scopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
 using (var scope = scopeFactory.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<PizzaShopDb>();
-    if (db.Database.EnsureCreated())
-    {
-        //MenuMaker.CreateToppings(db);
-        //OrderMaker.DeliveredOrders(db);
-    }
+    db.Database.EnsureCreated();
 }
 
 app.MapOpenApi();
@@ -40,8 +35,6 @@ app.MapGet("/orders", async (PizzaShopDb db) =>
     {
         return await db.Orders
             .Include(o => o.Pizzas)
-            .ThenInclude(p => p.Toppings)
-            .ThenInclude(t => t.Topping)
             .ToListAsync();
     })
     .WithSummary("Retrieve all orders")
@@ -51,8 +44,6 @@ app.MapGet("/orders/pending", async (PizzaShopDb db) =>
     {
         return await db.Orders.Where(o => o.Status == DeliveryStatus.Pending)
                 .Include(o => o.Pizzas)
-                .ThenInclude(p => p.Toppings)
-                .ThenInclude(t => t.Topping)
                 .Include(o => o.DeliveryAddress)
                 .ToListAsync();
     })
@@ -65,8 +56,6 @@ app.MapGet("/orders/{id}", async ([Description("The id of the order to watch")] 
         var order =  await db.Orders
                 .Where(o => o.OrderId == id)
                 .Include(o => o.Pizzas)
-                .ThenInclude(p => p.Toppings)
-                .ThenInclude(t => t.Topping)
                 .Include(o => o.DeliveryAddress)
                 .SingleOrDefaultAsync();
         
@@ -81,23 +70,6 @@ app.MapPost("/orders", async ([Description("The pizza order you wish to make")]O
 {
     order.CreatedTime = DateTimeOffset.UtcNow;
     
-    //we already have the toppings, so we must attach them to the order
-    foreach (var pizza in order.Pizzas)
-    {
-        for (int i = 0; i < pizza.Toppings.Count; i++)
-        {
-            var pizzaTopping = pizza.Toppings[i];
-            if (pizzaTopping.Topping is not null)
-            {
-                var existingTopping = await db.Toppings.SingleOrDefaultAsync(t => t.ToppingId == pizzaTopping.Topping.ToppingId);
-                if (existingTopping != null)
-                {
-                    pizza.Toppings[i] = new PizzaTopping { Topping = existingTopping };
-                }
-            }
-        }
-    }
-    
     db.Orders.Add(order);
     
     //really we should use an Outbox pattern here, to save the outgoing message, but for now we will just save the order
@@ -109,8 +81,6 @@ app.MapPost("/orders", async ([Description("The pizza order you wish to make")]O
     var pendingOrder = await db.Orders
         .Where(o => o.OrderId == order.OrderId)
         .Include(o => o.Pizzas)
-        .ThenInclude(p => p.Toppings)
-        .ThenInclude(t => t.Topping)
         .Include(o => o.DeliveryAddress)
         .SingleOrDefaultAsync();
 
@@ -118,10 +88,6 @@ app.MapPost("/orders", async ([Description("The pizza order you wish to make")]O
 })
 .WithSummary("Allows new orders to be raised")
 .WithDescription("The new orders endpoint is intended to allow orders to be raised. Orders are created with a status of 'Pending' and an ETA of 30 minutes.");
-
-app.MapGet("/toppings", async (PizzaShopDb db) => await db.Toppings.ToListAsync())
-    .WithSummary("Retrieve all toppings")
-    .WithDescription("The toppings endpoint allows you to retrieve all toppings.");
 
 //needs a background service that updates the status of the order in response to Kafka messages, which you can see via
 //polling the page returned in the 204 Accept

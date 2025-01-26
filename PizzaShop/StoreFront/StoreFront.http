@@ -17,14 +17,7 @@ Content-Type: application/json
   },
   "pizzas": [
     {
-      "size": 2,
-      "toppings": [
-        {
-          "topping": {
-            "toppingId": 2
-          }
-        }
-      ]
+      "size": 2
     }
   ]
 }

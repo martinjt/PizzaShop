@@ -12,7 +12,4 @@ public class Pizza
     public int OrderId { get; set; }
     [Description("How large should this pizza be, in inches?")]
     public PizzaSize Size { get; set; }
-
-    [Description("What toppings should be on this pizza?")]
-    public List<PizzaTopping> Toppings { get; set; } = new();
 }
