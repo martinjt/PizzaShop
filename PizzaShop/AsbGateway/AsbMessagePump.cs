@@ -35,7 +35,6 @@ public class AsbMessagePump<T>(
         
         processor.ProcessMessageAsync += async args =>
         {
-            using var activity = DiagnosticSettings.Source.StartActivity("ProcessMessage", ActivityKind.Consumer);
             var request = mapToRequest(args.Message);
             var result = await handler(request, cancellationToken);
             if (result)

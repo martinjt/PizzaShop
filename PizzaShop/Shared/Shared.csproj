@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AsbGateway\AsbGateway.csproj" />
+    <ProjectReference Include="..\KafkaGateway\KafkaGateway.csproj" />
   </ItemGroup>
 
 </Project>

@@ -8,9 +8,7 @@ namespace StoreFrontWorker;
 internal class AfterOrderService(IDbContextFactory<PizzaShopDb> dbContextFactory)
 {
     public bool Handle(OrderStatusChange orderStatusChange)
-    {
-        using var activity = orderStatusChange.SetCurrentTraceContext();
-        
+    {        
         if (dbContextFactory is null) throw new InvalidOperationException("No  EF Context Factory registered");
 
         using var db = dbContextFactory.CreateDbContext() ;

@@ -1,7 +1,10 @@
 using System.Diagnostics;
+using System.Text;
 using System.Threading.Channels;
 using Confluent.Kafka;
 using Microsoft.Extensions.Logging;
+using OpenTelemetry;
+using OpenTelemetry.Context.Propagation;
 
 namespace KafkaGateway;
 
@@ -34,6 +37,7 @@ public class KafkaMessagePump<TKey, TValue, TRequest>(
                 
                 logger.LogInformation($"Kafka Message Pump: Consumed message '{consumeResult.Message.Value}' at: '{consumeResult.TopicPartitionOffset}'.");
                 
+                using var activity = consumeResult.StartProcessMessageActivity();
                 var request = mapper(consumeResult.Message.Value);
                 var success = handler(request);
                 if (success)
@@ -55,5 +59,22 @@ public class KafkaMessagePump<TKey, TValue, TRequest>(
             logger.LogError(ex, "Kafka message pump was cancelled");
             //Pump was cancelled, exit
         }
+    }
+}
+
+public static class ConsumeResultExtensions
+{
+    public static Activity? StartProcessMessageActivity<TKey, TValue>(this ConsumeResult<TKey, TValue> consumeResult)
+    {
+
+        var propagationContext = Propagators.DefaultTextMapPropagator.Extract(
+            new PropagationContext(Activity.Current?.Context ?? new ActivityContext(), Baggage.Current),
+            consumeResult.Message.Headers, 
+                (headers, name) => 
+                    headers
+                        .Where(h => h.Key == name)
+                        .Select(h => Encoding.UTF8.GetString(h.GetValueBytes()))
+        );
+        return DiagnosticSettings.Source.StartActivity($"Process Event {typeof(TValue).Name}", ActivityKind.Consumer, propagationContext.ActivityContext);
     }
 }

@@ -17,6 +17,7 @@ public static class TelemetryExtensions
                 .AddSource(serviceName)
                 .AddSource(TraceableRequestExtensions.Source.Name)
                 .AddSource(AsbGateway.DiagnosticSettings.Source.Name)
+                .AddSource(KafkaGateway.DiagnosticSettings.Source.Name)
                 .AddAspNetCoreInstrumentation()
                 .AddEntityFrameworkCoreInstrumentation(options => {
                     options.SetDbStatementForText = true;
