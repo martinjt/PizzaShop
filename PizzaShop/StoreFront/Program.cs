@@ -15,7 +15,10 @@ var connectionString = "DataSource=storefront;mode=memory;cache=shared";
 var keepAliveConnection = new SqliteConnection(connectionString);
 keepAliveConnection.Open();
 
-builder.AddSqlServerDbContext<PizzaShopDb>(connectionName: "pizza-shop-db");
+builder.AddSqlServerDbContext<PizzaShopDb>(connectionName: "pizza-shop-db", settings => 
+{
+    settings.DisableTracing = true;
+});
 
 builder.Services.AddOpenApi();
 
