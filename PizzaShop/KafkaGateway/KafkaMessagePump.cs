@@ -37,7 +37,7 @@ public class KafkaMessagePump<TKey, TValue, TRequest>(
                 
                 logger.LogInformation($"Kafka Message Pump: Consumed message '{consumeResult.Message.Value}' at: '{consumeResult.TopicPartitionOffset}'.");
                 
-                using var activity = consumeResult.StartProcessMessageActivity();
+                using var activity = consumeResult.StartProcessMessageActivity(typeof(TRequest));
                 var request = mapper(consumeResult.Message.Value);
                 var success = handler(request);
                 if (success)
@@ -64,7 +64,7 @@ public class KafkaMessagePump<TKey, TValue, TRequest>(
 
 public static class ConsumeResultExtensions
 {
-    public static Activity? StartProcessMessageActivity<TKey, TValue>(this ConsumeResult<TKey, TValue> consumeResult)
+    public static Activity? StartProcessMessageActivity<TKey, TValue>(this ConsumeResult<TKey, TValue> consumeResult, Type messageType)
     {
 
         var propagationContext = Propagators.DefaultTextMapPropagator.Extract(
@@ -75,6 +75,6 @@ public static class ConsumeResultExtensions
                         .Where(h => h.Key == name)
                         .Select(h => Encoding.UTF8.GetString(h.GetValueBytes()))
         );
-        return DiagnosticSettings.Source.StartActivity($"Process Event {typeof(TValue).Name}", ActivityKind.Consumer, propagationContext.ActivityContext);
+        return DiagnosticSettings.Source.StartActivity($"Process Event {messageType.Name}", ActivityKind.Consumer, propagationContext.ActivityContext);
     }
 }

@@ -6,6 +6,8 @@ processors:
       span:
         # drop the receive spans that provide no value
         - 'attributes["messaging.operation"] == "receive" and name == "ServiceBusReceiver.Receive"'
+        - 'attributes["messaging.operation"] == "settle" and name == "ServiceBusReceiver.Complete"'
+        - 'attributes["messaging.operation"] == "publish" and name == "ServiceBusReceiver.Send"'
   
 service:
   pipelines:
