@@ -29,10 +29,13 @@ internal class KitchenService(
             {
                 var request = await cookRequests.Reader.ReadAsync(stoppingToken);
                 activity = request.StartNewSpanFromRequest();
+                
+                activity?.SetTag("pizzashop.pizza.total_count", request.Pizzas.Count());
+                activity?.SetTag("pizzashop.order.id", request.OrderId);
 
-                //cook the pizza
-                //NOTE -- removed for debugging purposes
-                //await Task.Delay(5000, stoppingToken); //simulate cooking time
+                var cookTasks = request.Pizzas.Select(CookPizza);
+
+                await Task.WhenAll(cookTasks);
 
                 //await the courier to accept the order -- assume the first available courier will accept
                 var courierStatusUpdate = await courierStatusUpdates.Reader.ReadAsync(stoppingToken);
@@ -53,5 +56,24 @@ internal class KitchenService(
                 activity?.Dispose();
             }
         }
+    }
+
+    private async Task CookPizza(Pizza pizza)
+    {
+        var cooktime = pizza.Size switch
+        {
+            PizzaSize.Small => 1000,
+            PizzaSize.Medium => 1500,
+            PizzaSize.Large => 2000,
+            PizzaSize.ExtraLarge => 3500,
+            _ => throw new NotImplementedException()
+        };
+
+        using var activity = DiagnosticConfig.Source.StartActivity("Cook Pizza", ActivityKind.Internal, null, tags: [
+            new("pizzashop.pizza.size", pizza.Size),
+            new("pizzashop.order.id", pizza.OrderId)
+        ] );
+        await Task.Delay(cooktime);
+
     }
 }

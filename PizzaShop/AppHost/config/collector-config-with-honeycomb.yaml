@@ -16,5 +16,4 @@ service:
         - otlp/aspire
     logs:
       exporters:
-        - otlp/honeycomb
         - otlp/aspire
