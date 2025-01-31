@@ -28,7 +28,7 @@ internal class KitchenService(
             try
             {
                 var request = await cookRequests.Reader.ReadAsync(stoppingToken);
-                activity = request.SetCurrentTraceContext();
+                activity = request.StartNewSpanFromRequest();
 
                 //cook the pizza
                 //NOTE -- removed for debugging purposes

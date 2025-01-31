@@ -13,7 +13,9 @@ builder.Services.AddPizzaShopTelemetry("StoreFrontWorker");
 
 var connectionString = builder.Configuration.GetConnectionString("pizza-shop-db");
 builder.Services.AddDbContextFactory<PizzaShopDb>(dbContextOptionsBuilder => dbContextOptionsBuilder.UseSqlServer(connectionString));
-builder.EnrichSqlServerDbContext<PizzaShopDb>();
+builder.EnrichSqlServerDbContext<PizzaShopDb>(options => {
+    options.DisableTracing = true;
+});
 
 builder.Services.AddSingleton(
     KafkaConsumerFactory<int, string>

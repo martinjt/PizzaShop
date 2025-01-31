@@ -24,7 +24,7 @@ public static class TraceableRequestExtensions
             request.RequestHeaders, (headers, key, value) => headers[key] = [value]);
     }
 
-    public static Activity? SetCurrentTraceContext(this TraceableRequest request)
+    public static Activity? StartNewSpanFromRequest(this TraceableRequest request)
     {
         var context = Propagators.DefaultTextMapPropagator.Extract(
             new PropagationContext(Activity.Current?.Context ?? new ActivityContext(), Baggage.Current), 
@@ -35,5 +35,20 @@ public static class TraceableRequestExtensions
         return Source.StartActivity($"Process {request.GetType().Name}", 
             ActivityKind.Internal, 
             context.ActivityContext);
+    }
+
+    public static Activity? StartNewRootSpanFromRequest(this TraceableRequest request)
+    {
+        var context = Propagators.DefaultTextMapPropagator.Extract(
+            new PropagationContext(Activity.Current?.Context ?? new ActivityContext(), Baggage.Current), 
+            request.RequestHeaders, (headers, key) => headers.TryGetValue(key, out var value) ? value : null);
+        
+        Baggage.Current = context.Baggage;
+        Activity.Current = null;
+
+        return Source.StartActivity($"Process {request.GetType().Name}", 
+            ActivityKind.Server,
+            new ActivityContext(),
+            links: [new(context.ActivityContext)]);
     }
 }

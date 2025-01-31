@@ -17,7 +17,7 @@ internal class DispatchService(Channel<DeliveryRequest> deliveryRequests, AsbPro
         while (!stoppingToken.IsCancellationRequested)
         {
             var request = await deliveryRequests.Reader.ReadAsync(stoppingToken);
-            using var activity = request.SetCurrentTraceContext();
+            using var activity = request.StartNewSpanFromRequest();
 
             await producer.SendMessageAsync(request.CourierId + "-availability", new Message<DeliveryManifest>(new DeliveryManifest(request)), stoppingToken);
         }
