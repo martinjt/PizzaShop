@@ -1,0 +1,31 @@
+groups:
+  - id: registry.order
+    type: attribute_group
+    display_name: "Attributes about the Pizza"
+    brief: >
+      A courier for the Pizza shop
+    attributes:
+      - id: pizzashop.order.id
+        type: int
+        brief: >
+          The orderid for a given order
+        note: >
+          This should be added wherever it's present.
+        examples: [1, 2, 3]
+        stability: stable
+      - id: pizzashop.order.pizza_count
+        type: int
+        brief: >
+          The number of pizzas in an order
+        note: >
+          This should be added wherever it's present.
+        examples: [1, 2, 3]
+        stability: stable
+      - id: pizzashop.order.delivery_address
+        type: string
+        brief: >
+          The delivery address for an order
+        note: >
+          This should be added wherever it's present.
+        examples: ["123 Main St", "456 Main St", "789 Main St"]
+        stability: stable

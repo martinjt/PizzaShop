@@ -1,0 +1,23 @@
+groups:
+  - id: registry.courier
+    type: attribute_group
+    display_name: "Attributes about the courier"
+    brief: >
+      A courier for the Pizza shopw
+    attributes:
+      - id: pizzashop.courier.name
+        type: string
+        brief: >
+          The name of the courier
+        note: >
+          This is the human readable name of the courier
+        examples: ["alice", "bob", "terry"]
+        stability: stable
+      - id: pizzashop.courier.id
+        type: string
+        brief: >
+          The id of the courier
+        note: >
+          This is the unique id of the courier
+        examples: ["1", "2", "3"]
+        stability: stable

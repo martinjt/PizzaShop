@@ -1,0 +1,23 @@
+groups:
+  - id: registry.pizza
+    type: attribute_group
+    display_name: "Attributes about the Pizza"
+    brief: >
+      A courier for the Pizza shop
+    attributes:
+      - id: pizzashop.pizza.toppings
+        type: string
+        brief: >
+          A list of the toppings
+        note: >
+          This should be a comma separated list of toppings
+        examples: ["cheese, pepperoni, mushrooms", "pepperoni, mushrooms", "cheese, mushrooms"]
+        stability: stable
+      - id: pizzashop.pizza.size
+        type: string
+        brief: >
+          The size of the pizza
+        note: >
+          This should be added wherever it's present.
+        examples: ["small", "medium", "large"]
+        stability: stable

@@ -7,9 +7,9 @@ namespace Shared;
 
 public static class TelemetryExtensions
 {
-    public const bool EnableTelemetry = false;
-    public const bool EnableExperimentalServiceBus = false;
-    public const bool EnableCustomTelemtry = false;
+    public const bool EnableTelemetry = true;
+    public const bool EnableExperimentalServiceBus = true;
+    public const bool EnableCustomTelemtry = true;
     public static IOpenTelemetryBuilder AddPizzaShopTelemetry(this IServiceCollection services, string serviceName, string[]? additionalSources = null, Dictionary<string, string>? additionalResourceAttributes = null)
     {
         var openTelemetryBuilder = services.AddOpenTelemetry()
