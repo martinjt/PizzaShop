@@ -21,7 +21,8 @@ internal class DeliveryService(string orderStatusTopic, Channel<OrderStatus> del
         {
             //should only service one order at a time
             var orderStatus = await deliveryJobs.Reader.ReadAsync(stoppingToken);
-            using var activity = orderStatus.StartNewSpanFromRequest();
+            //using var activity = orderStatus.StartNewSpanFromRequest();
+            using var activity = orderStatus.StartNewRootSpanFromRequest();
 
             using var timer = new PeriodicTimer(TimeSpan.FromSeconds(15));
             while (!stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
