@@ -30,7 +30,7 @@ hostBuilder.Services.AddPizzaShopTelemetry("PizzaShop", additionalSources: [Diag
 //we use multiple pumps, because we don't want all channels to become unresponsive because one gets busy!!! In practice, we would
 //want competing consumers here
 hostBuilder.Services.AddAzureClients(clientBuilder => {
-    clientBuilder.AddServiceBusClient(hostBuilder.Configuration["ServiceBus:ConnectionString"]);
+    clientBuilder.AddServiceBusClient(hostBuilder.Configuration.GetConnectionString("ServiceBus"));
 });
 
 //we have distinct queues for job accepted and job rejected to listen to each courier - all post to the same channel

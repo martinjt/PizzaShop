@@ -48,11 +48,11 @@ var storefront = builder.AddProject<Projects.StoreFront>("store-front")
     .WithReference(db)
     .WaitFor(db)
     .WithEnvironment("ServiceBus__OrderQueueName", OrderQueueName)
-    .WithEnvironment("ServiceBus__ConnectionString", ServiceBusConnectionString);
+    .WithEnvironment("ConnectionStrings__ServiceBus", ServiceBusConnectionString);
 
 var pizzashop = builder.AddProject<Projects.PizzaShop>("pizza-shop")
     .WithEnvironment("ServiceBus__OrderQueueName", OrderQueueName)
-    .WithEnvironment("ServiceBus__ConnectionString", ServiceBusConnectionString);
+    .WithEnvironment("ConnectionStrings__ServiceBus", ServiceBusConnectionString);
 
 var storeFrontWorker = builder.AddProject<Projects.StoreFrontWorker>("store-front-worker")
     .WithReference(db)
@@ -69,7 +69,7 @@ for (int i = 0; i < couriers.Length; i++)
     builder.AddProject<Projects.Courier>("courier-" + i)
         .WithReference(kafka)
         .WaitFor(kafka)
-        .WithEnvironment("ServiceBus__ConnectionString", ServiceBusConnectionString)
+        .WithEnvironment("ConnectionStrings__ServiceBus",ServiceBusConnectionString)
         .WithEnvironment("Courier__Name", couriers[i]);
 }
 

@@ -17,7 +17,7 @@ hostBuilder.Services.AddPizzaShopTelemetry("Courier",
     });
 
 hostBuilder.Services.AddAzureClients(clientBuilder => {
-    clientBuilder.AddServiceBusClient(hostBuilder.Configuration["ServiceBus:ConnectionString"]);
+    clientBuilder.AddServiceBusClient(hostBuilder.Configuration.GetConnectionString("ServiceBus"));
 });
 
 hostBuilder.Services.AddSingleton(KafkaProducerFactory<int, string>

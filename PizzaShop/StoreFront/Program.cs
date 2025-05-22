@@ -99,7 +99,7 @@ await app.RunAsync();
 
 async Task SendOrderAsync(Order order)
 {
-    var sbConnectionString = app.Configuration.GetValue<string>("ServiceBus:ConnectionString");
+    var sbConnectionString = app.Configuration.GetConnectionString("ServiceBus");
     var queueName = app.Configuration.GetValue<string>("ServiceBus:OrderQueueName");
             
     if (string.IsNullOrEmpty(sbConnectionString) || string.IsNullOrEmpty(queueName))
